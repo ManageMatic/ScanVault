@@ -9,7 +9,7 @@ import '../../../shared/models/document.dart';
 import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
 import '../../pdf_creation/domain/pdf_models.dart';
 
-/// In-App PDF Viewer and Export Screen adhering to Google Stitch specifications.
+/// Production in-app interactive PDF viewer, exporter, and document inspector.
 class PdfViewerScreen extends StatefulWidget {
   final Document document;
   final VoidCallback? onDeleted;
@@ -27,6 +27,7 @@ class PdfViewerScreen extends StatefulWidget {
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
   late File _pdfFile;
   bool _fileExists = false;
+  int _actualFileSize = 0;
 
   @override
   void initState() {
@@ -37,8 +38,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   void _checkFile() async {
     final exists = await _pdfFile.exists();
+    int size = 0;
+    if (exists) {
+      size = await _pdfFile.length();
+    }
     if (mounted) {
-      setState(() => _fileExists = exists);
+      setState(() {
+        _fileExists = exists;
+        _actualFileSize = size > 0 ? size : widget.document.fileSize;
+      });
     }
   }
 
@@ -130,9 +138,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               const SizedBox(height: 16),
               _buildMetaRow('Title', widget.document.title),
               _buildMetaRow('Pages', '${widget.document.pageCount} page(s)'),
-              _buildMetaRow('File Size', formatBytes(widget.document.fileSize)),
+              _buildMetaRow('File Size', formatBytes(_actualFileSize > 0 ? _actualFileSize : widget.document.fileSize)),
               _buildMetaRow('Optimization', widget.document.compressionPreset.name.toUpperCase()),
               _buildMetaRow('Created', DateFormat('MMM dd, yyyy • HH:mm').format(widget.document.createdAt)),
+              _buildMetaRow('Modified', DateFormat('MMM dd, yyyy • HH:mm').format(widget.document.updatedAt)),
               _buildMetaRow('Vault Path', widget.document.filePath, isMonospace: true),
               const SizedBox(height: 16),
             ],
@@ -184,7 +193,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              '${widget.document.pageCount} page(s) • ${formatBytes(widget.document.fileSize)}',
+              '${widget.document.pageCount} page(s) • ${formatBytes(_actualFileSize > 0 ? _actualFileSize : widget.document.fileSize)}',
               style: AppTypography.labelSmall.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 11,
@@ -226,9 +235,15 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.document.filePath,
+                      'The local file may have been moved or removed:\n${widget.document.filePath}',
                       style: AppTypography.bodySmall,
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('Back to Vault'),
                     ),
                   ],
                 ),

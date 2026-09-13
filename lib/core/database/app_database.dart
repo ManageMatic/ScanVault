@@ -4,11 +4,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../shared/models/document.dart';
 import '../../../shared/models/folder.dart';
+import '../../features/documents/domain/documents_controller.dart';
 
-/// Production asynchronous SQLite database with indexing and user data isolation.
+/// Production asynchronous SQLite database with indexing, pagination, migrations, and user isolation.
 class AppDatabase {
   static const String _dbName = 'scanvault_metadata.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   Database? _db;
 
@@ -62,15 +63,28 @@ class AppDatabase {
           )
         ''');
 
-        // Indexes for fast scalable lookups
+        // Composite indexes for scalable lookups (100 - 5,000+ records)
         await db.execute('CREATE INDEX idx_documents_user ON documents(user_id);');
         await db.execute('CREATE INDEX idx_documents_user_created ON documents(user_id, created_at DESC);');
+        await db.execute('CREATE INDEX idx_documents_user_updated ON documents(user_id, updated_at DESC);');
         await db.execute('CREATE INDEX idx_documents_user_fav ON documents(user_id, is_favorite);');
         await db.execute('CREATE INDEX idx_documents_user_folder ON documents(user_id, folder_id);');
+        await db.execute('CREATE INDEX idx_documents_user_title ON documents(user_id, title);');
+        await db.execute('CREATE INDEX idx_documents_user_size ON documents(user_id, file_size_bytes);');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Add newly optimized indexes safely without wiping existing data
+          try {
+            await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_user_updated ON documents(user_id, updated_at DESC);');
+            await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_user_title ON documents(user_id, title);');
+            await db.execute('CREATE INDEX IF NOT EXISTS idx_documents_user_size ON documents(user_id, file_size_bytes);');
+          } catch (_) {}
+        }
       },
     );
 
-    // Automatically purge any lingering demo documents and folders from early versions
+    // Automatically purge any lingering legacy demo documents
     await databaseInstance.delete('documents', where: "id LIKE 'doc-%' OR id LIKE 'demo-%' OR id LIKE 'sample-%'");
     await databaseInstance.delete('folders', where: "id LIKE 'folder-%' OR id LIKE 'demo-%'");
 
@@ -79,7 +93,17 @@ class AppDatabase {
 
   // --- Document Operations ---
 
-  Future<List<Document>> getDocumentsForUser(String userId, {String? folderId, bool? onlyFavorites, String? searchQuery}) async {
+  /// Fast paginated querying with database-level sorting, filtering, and full-text search.
+  Future<List<Document>> getDocumentsForUserPaginated({
+    required String userId,
+    int limit = 30,
+    int offset = 0,
+    String? folderId,
+    bool? onlyFavorites,
+    String? searchQuery,
+    DocumentSortOption sortOption = DocumentSortOption.newest,
+    DocumentFilterType filterType = DocumentFilterType.all,
+  }) async {
     final db = await database;
     final whereClauses = ['user_id = ?'];
     final whereArgs = <dynamic>[userId];
@@ -88,22 +112,82 @@ class AppDatabase {
       whereClauses.add('folder_id = ?');
       whereArgs.add(folderId);
     }
-    if (onlyFavorites == true) {
+    if (onlyFavorites == true || filterType == DocumentFilterType.favoritesOnly) {
       whereClauses.add('is_favorite = 1');
     }
-    if (searchQuery != null && searchQuery.isNotEmpty) {
+    if (filterType == DocumentFilterType.ocrOnly) {
+      whereClauses.add('ocr_status = ?');
+      whereArgs.add('completed');
+    }
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final q = '%${searchQuery.trim()}%';
       whereClauses.add('(title LIKE ? OR extracted_text LIKE ?)');
-      whereArgs.add('%$searchQuery%');
-      whereArgs.add('%$searchQuery%');
+      whereArgs.add(q);
+      whereArgs.add(q);
+    }
+
+    // Database-level sorting strategy
+    String orderBy;
+    switch (sortOption) {
+      case DocumentSortOption.newest:
+        orderBy = 'updated_at DESC, created_at DESC';
+        break;
+      case DocumentSortOption.oldest:
+        orderBy = 'created_at ASC';
+        break;
+      case DocumentSortOption.nameAsc:
+        orderBy = 'title COLLATE NOCASE ASC';
+        break;
+      case DocumentSortOption.nameDesc:
+        orderBy = 'title COLLATE NOCASE DESC';
+        break;
+      case DocumentSortOption.sizeLargest:
+        orderBy = 'file_size_bytes DESC';
+        break;
+      case DocumentSortOption.sizeSmallest:
+        orderBy = 'file_size_bytes ASC';
+        break;
     }
 
     final maps = await db.query(
       'documents',
       where: whereClauses.join(' AND '),
       whereArgs: whereArgs,
-      orderBy: 'created_at DESC',
+      orderBy: orderBy,
+      limit: limit,
+      offset: offset,
     );
 
+    return maps.map((m) => _documentFromMap(m)).toList();
+  }
+
+  Future<List<Document>> getDocumentsForUser(
+    String userId, {
+    String? folderId,
+    bool? onlyFavorites,
+    String? searchQuery,
+    DocumentSortOption sortOption = DocumentSortOption.newest,
+  }) async {
+    return getDocumentsForUserPaginated(
+      userId: userId,
+      limit: 1000,
+      offset: 0,
+      folderId: folderId,
+      onlyFavorites: onlyFavorites,
+      searchQuery: searchQuery,
+      sortOption: sortOption,
+    );
+  }
+
+  Future<List<Document>> getRecentDocumentsForUser(String userId, {int limit = 6}) async {
+    final db = await database;
+    final maps = await db.query(
+      'documents',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'updated_at DESC',
+      limit: limit,
+    );
     return maps.map((m) => _documentFromMap(m)).toList();
   }
 
@@ -136,6 +220,32 @@ class AppDatabase {
     );
   }
 
+  Future<void> renameDocument(String userId, String documentId, String newTitle) async {
+    final db = await database;
+    await db.update(
+      'documents',
+      {
+        'title': newTitle.trim(),
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'user_id = ? AND id = ?',
+      whereArgs: [userId, documentId],
+    );
+  }
+
+  Future<void> moveDocument(String userId, String documentId, String? folderId) async {
+    final db = await database;
+    await db.update(
+      'documents',
+      {
+        'folder_id': folderId,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'user_id = ? AND id = ?',
+      whereArgs: [userId, documentId],
+    );
+  }
+
   Future<void> deleteDocument(String userId, String id) async {
     final db = await database;
     await db.delete(
@@ -163,7 +273,7 @@ class AppDatabase {
     );
 
     if (maps.isEmpty) {
-      // Seed default smart folders for user
+      // Seed default smart categories for new user
       final now = DateTime.now();
       final defaultFolders = [
         Folder(id: 'personal_$userId', name: 'Personal', colorHex: '#0D9488', iconName: 'person', createdAt: now, updatedAt: now),
@@ -177,7 +287,32 @@ class AppDatabase {
       return defaultFolders;
     }
 
-    return maps.map((m) => _folderFromMap(m)).toList();
+    final counts = await getFolderDocumentCounts(userId);
+
+    return maps.map((m) {
+      final f = _folderFromMap(m);
+      return f.copyWith(documentCount: counts[f.id] ?? 0);
+    }).toList();
+  }
+
+  Future<Map<String, int>> getFolderDocumentCounts(String userId) async {
+    final db = await database;
+    final results = await db.rawQuery('''
+      SELECT folder_id, COUNT(*) as doc_count 
+      FROM documents 
+      WHERE user_id = ? AND folder_id IS NOT NULL 
+      GROUP BY folder_id
+    ''', [userId]);
+
+    final map = <String, int>{};
+    for (final row in results) {
+      final folderId = row['folder_id'] as String?;
+      final count = (row['doc_count'] as int?) ?? 0;
+      if (folderId != null) {
+        map[folderId] = count;
+      }
+    }
+    return map;
   }
 
   Future<void> insertFolder(String userId, Folder folder) async {
@@ -190,6 +325,35 @@ class AppDatabase {
       'icon_name': folder.iconName,
       'created_at': folder.createdAt.millisecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> renameFolder(String userId, String folderId, String newName) async {
+    final db = await database;
+    await db.update(
+      'folders',
+      {'name': newName.trim()},
+      where: 'user_id = ? AND id = ?',
+      whereArgs: [userId, folderId],
+    );
+  }
+
+  /// Safe folder deletion: unlinks contained documents to vault root (folder_id = null)
+  /// before deleting the folder itself, preventing any data loss.
+  Future<void> deleteFolder(String userId, String folderId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'documents',
+        {'folder_id': null},
+        where: 'user_id = ? AND folder_id = ?',
+        whereArgs: [userId, folderId],
+      );
+      await txn.delete(
+        'folders',
+        where: 'user_id = ? AND id = ?',
+        whereArgs: [userId, folderId],
+      );
+    });
   }
 
   // --- Storage Aggregations ---
