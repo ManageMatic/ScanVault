@@ -156,15 +156,19 @@ class ScannerController extends ChangeNotifier {
     try {
       List<XFile> images = [];
       try {
-        images = await _picker.pickMultiImage();
+        images = await _picker.pickMultiImage(
+          imageQuality: 95,
+          maxWidth: 2800,
+          maxHeight: 2800,
+        );
       } catch (e) {
-        debugPrint('pickMultiImage fallback: $e');
-        final single = await _picker.pickImage(source: ImageSource.gallery);
-        if (single != null) images = [single];
-      }
-
-      if (images.isEmpty) {
-        final single = await _picker.pickImage(source: ImageSource.gallery);
+        debugPrint('pickMultiImage fallback to pickImage: $e');
+        final single = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 95,
+          maxWidth: 2800,
+          maxHeight: 2800,
+        );
         if (single != null) images = [single];
       }
 
@@ -177,13 +181,13 @@ class ScannerController extends ChangeNotifier {
         final bytes = await img.readAsBytes();
         if (bytes.isEmpty) continue;
 
-        // Persist to temporary file to guarantee a valid file path on local filesystem
+        // Persist to local application temporary storage with flush
         final localPath = p.join(
           tempDir.path,
           'imported_${DateTime.now().millisecondsSinceEpoch}_${const Uuid().v4().substring(0, 8)}.jpg',
         );
         final localFile = File(localPath);
-        await localFile.writeAsBytes(bytes);
+        await localFile.writeAsBytes(bytes, flush: true);
 
         final page = ScannedPageItem(
           id: const Uuid().v4(),

@@ -69,13 +69,13 @@ class AccountProfileScreen extends StatelessWidget {
                       color: AppColors.primary,
                       child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
                           ? Image.network(
-                              user!.avatarUrl!,
+                              user.avatarUrl!,
                               width: 76,
                               height: 76,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => Center(
                                 child: Text(
-                                  user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                  user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                                   style: AppTypography.headlineMedium.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,

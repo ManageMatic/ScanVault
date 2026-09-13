@@ -53,7 +53,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     final nowStr = DateFormat('ddMMM_HHmm').format(DateTime.now());
     _titleController.text = 'ScanDoc_$nowStr';
 
+    widget.scannerController.addListener(_onControllerChanged);
     _loadFolders();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadFolders() async {
@@ -70,6 +75,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
   @override
   void dispose() {
+    widget.scannerController.removeListener(_onControllerChanged);
     _pageController.dispose();
     _titleController.dispose();
     super.dispose();
@@ -549,33 +555,72 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   }
 
   Widget _buildPagePreview(ScannedPageItem page) {
+    final rotationQuarterTurns = (page.enhancementParams.rotationDegrees ~/ 90) % 4;
+
+    Widget imageContent;
+
     if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
-      return Image.memory(
+      imageContent = Image.memory(
         page.cachedProcessedBytes!,
+        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}_${page.enhancementParams.rotationDegrees}'),
         fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
+        filterQuality: FilterQuality.medium,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return const Center(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
+            ),
+          );
+        },
         errorBuilder: (context, error, stackTrace) {
           debugPrint('Image.memory error in review: $error');
-          return _buildFileFallback(page.originalImagePath);
+          return _buildFileFallback(page);
         },
       );
+    } else {
+      imageContent = _buildFileFallback(page);
     }
-    return _buildFileFallback(page.originalImagePath);
+
+    return RotatedBox(
+      quarterTurns: rotationQuarterTurns,
+      child: imageContent,
+    );
   }
 
-  Widget _buildFileFallback(String path) {
+  Widget _buildFileFallback(ScannedPageItem page) {
+    final path = page.originalImagePath;
     if (path.isNotEmpty) {
       final file = File(path);
       if (file.existsSync()) {
         return Image.file(
           file,
+          key: ValueKey('file_${page.id}_${page.enhancementParams.rotationDegrees}'),
           fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
+          filterQuality: FilterQuality.medium,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded || frame != null) {
+              return child;
+            }
+            return const Center(
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
+              ),
+            );
+          },
           errorBuilder: (context, error, stackTrace) {
             debugPrint('Image.file error in review: $error');
-            return _buildErrorCard('Image could not be rendered');
+            return _buildErrorCard('Image could not be rendered: $error');
           },
         );
       }

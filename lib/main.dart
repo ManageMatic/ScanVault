@@ -23,6 +23,7 @@ void main() async {
     try {
       await Supabase.initialize(
         url: AppConfig.supabaseUrl,
+        // ignore: deprecated_member_use
         anonKey: AppConfig.supabaseAnonKey,
       );
     } catch (e) {
