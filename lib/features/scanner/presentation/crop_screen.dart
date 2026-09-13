@@ -45,14 +45,22 @@ class _CropScreenState extends State<CropScreen> {
 
   Future<void> _loadImageAndDetect() async {
     try {
-      final file = File(widget.page.originalImagePath);
-      if (await file.exists()) {
-        _imageBytes = await file.readAsBytes();
-      } else if (widget.page.cachedProcessedBytes != null) {
+      if (widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
         _imageBytes = widget.page.cachedProcessedBytes;
+      } else {
+        final file = File(widget.page.originalImagePath);
+        if (await file.exists()) {
+          _imageBytes = await file.readAsBytes();
+        }
       }
 
       if (_imageBytes != null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+
         if (widget.page.cropTopLeft != null) {
           // Restore previously saved normalized crop points
           _normTopLeft = widget.page.cropTopLeft!;
@@ -60,17 +68,25 @@ class _CropScreenState extends State<CropScreen> {
           _normBottomRight = widget.page.cropBottomRight!;
           _normBottomLeft = widget.page.cropBottomLeft!;
         } else {
-          // Run Automatic Document Detection
+          // Run Automatic Document Detection in background
           _isDetecting = true;
           if (mounted) setState(() {});
 
-          const detector = EdgeDocumentDetector();
-          final result = await detector.detectFromBytes(_imageBytes!);
-          _detectionResult = result;
-          _normTopLeft = result.topLeft;
-          _normTopRight = result.topRight;
-          _normBottomRight = result.bottomRight;
-          _normBottomLeft = result.bottomLeft;
+          try {
+            const detector = EdgeDocumentDetector();
+            final result = await detector.detectFromBytes(_imageBytes!);
+            if (mounted) {
+              setState(() {
+                _detectionResult = result;
+                _normTopLeft = result.topLeft;
+                _normTopRight = result.topRight;
+                _normBottomRight = result.bottomRight;
+                _normBottomLeft = result.bottomLeft;
+              });
+            }
+          } catch (e) {
+            debugPrint('Document detection fallback: $e');
+          }
         }
       }
     } catch (e) {
@@ -270,6 +286,7 @@ class _CropScreenState extends State<CropScreen> {
                                         ? Image.memory(
                                             _imageBytes!,
                                             fit: BoxFit.contain,
+                                            gaplessPlayback: true,
                                             filterQuality: FilterQuality.medium,
                                           )
                                         : Container(color: Colors.grey.shade900),

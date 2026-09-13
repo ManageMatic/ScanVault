@@ -662,23 +662,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
       imageContent = Image.memory(
         page.cachedProcessedBytes!,
-        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}_${page.enhancementParams.rotationDegrees}'),
+        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}'),
         fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
+        gaplessPlayback: true,
         filterQuality: FilterQuality.medium,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded || frame != null) {
-            return child;
-          }
-          return const Center(
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
-            ),
-          );
-        },
         errorBuilder: (context, error, stackTrace) {
           debugPrint('Image.memory error in review: $error');
           return _buildFileFallback(page);
@@ -701,23 +690,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       if (file.existsSync()) {
         return Image.file(
           file,
-          key: ValueKey('file_${page.id}_${page.enhancementParams.rotationDegrees}'),
+          key: ValueKey('file_${page.id}_${file.lengthSync()}'),
           fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
+          gaplessPlayback: true,
           filterQuality: FilterQuality.medium,
-          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded || frame != null) {
-              return child;
-            }
-            return const Center(
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
-              ),
-            );
-          },
           errorBuilder: (context, error, stackTrace) {
             debugPrint('Image.file error in review: $error');
             return _buildErrorCard('Image could not be rendered: $error');

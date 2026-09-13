@@ -51,6 +51,10 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
           _rawBytes = await f.readAsBytes();
         }
       }
+      if (_rawBytes != null) {
+        _previewBytes = _rawBytes;
+        if (mounted) setState(() => _isLoading = false);
+      }
       _updatePreview();
     } catch (e) {
       debugPrint('Error loading image for enhancement: $e');
@@ -179,13 +183,8 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
                                 _previewBytes!,
                                 key: ValueKey('preview_${_selectedFilter}_${_brightness}_${_contrast}_$_shadowRemoval'),
                                 fit: BoxFit.contain,
+                                gaplessPlayback: true,
                                 filterQuality: FilterQuality.medium,
-                                frameBuilder: (context, child, frame, wasSync) {
-                                  if (wasSync || frame != null) return child;
-                                  return const Center(
-                                    child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
-                                  );
-                                },
                               )
                             : Container(color: Colors.grey.shade900),
                       ),

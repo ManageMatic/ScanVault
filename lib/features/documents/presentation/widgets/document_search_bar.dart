@@ -38,6 +38,7 @@ class DocumentSearchBar extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.search_rounded,
@@ -48,6 +49,7 @@ class DocumentSearchBar extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     onChanged: onChanged,
+                    textAlignVertical: TextAlignVertical.center,
                     style: AppTypography.bodyMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -57,7 +59,7 @@ class DocumentSearchBar extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      contentPadding: EdgeInsets.zero,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
