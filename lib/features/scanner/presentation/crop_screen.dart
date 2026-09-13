@@ -156,69 +156,75 @@ class _CropScreenState extends State<CropScreen> {
                           final imgW = constraints.maxWidth;
                           final imgH = constraints.maxHeight;
 
-                          if (_imageDisplaySize == Size.zero) {
+                          if (_imageDisplaySize == Size.zero && imgW > 0 && imgH > 0) {
                             _initCropPoints(Size(imgW, imgH));
                           }
 
-                          return Stack(
-                            children: [
-                              // Background Base Image
-                              Positioned.fill(
-                                child: RotatedBox(
-                                  quarterTurns: _rotationDegrees ~/ 90,
-                                  child: _imageBytes != null
-                                      ? Image.memory(
-                                          _imageBytes!,
-                                          fit: BoxFit.contain,
-                                        )
-                                      : Container(color: Colors.grey.shade900),
-                                ),
-                              ),
-
-                              // Interactive Quadrilateral Mask and Handles
-                              Positioned.fill(
-                                child: GestureDetector(
-                                  onPanDown: (details) {
-                                    _activeCorner = _findNearestCorner(details.localPosition);
-                                  },
-                                  onPanUpdate: (details) {
-                                    if (_activeCorner >= 0) {
-                                      setState(() {
-                                        final pos = details.localPosition;
-                                        final clampedX = pos.dx.clamp(0.0, imgW);
-                                        final clampedY = pos.dy.clamp(0.0, imgH);
-                                        final newPt = math.Point(clampedX, clampedY);
-
-                                        switch (_activeCorner) {
-                                          case 0:
-                                            _topLeft = newPt;
-                                            break;
-                                          case 1:
-                                            _topRight = newPt;
-                                            break;
-                                          case 2:
-                                            _bottomRight = newPt;
-                                            break;
-                                          case 3:
-                                            _bottomLeft = newPt;
-                                            break;
-                                        }
-                                      });
-                                    }
-                                  },
-                                  onPanEnd: (_) => _activeCorner = -1,
-                                  child: CustomPaint(
-                                    painter: _CropOverlayPainter(
-                                      topLeft: _topLeft,
-                                      topRight: _topRight,
-                                      bottomRight: _bottomRight,
-                                      bottomLeft: _bottomLeft,
-                                      activeCorner: _activeCorner,
-                                    ),
+                          return SizedBox(
+                            width: imgW,
+                            height: imgH,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Background Base Image
+                                Positioned.fill(
+                                  child: RotatedBox(
+                                    quarterTurns: _rotationDegrees ~/ 90,
+                                    child: _imageBytes != null
+                                        ? Image.memory(
+                                            _imageBytes!,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : Container(color: Colors.grey.shade900),
                                   ),
                                 ),
-                              ),
-                            ],
+
+                                // Interactive Quadrilateral Mask and Handles
+                                if (_imageDisplaySize != Size.zero)
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      onPanDown: (details) {
+                                        _activeCorner = _findNearestCorner(details.localPosition);
+                                      },
+                                      onPanUpdate: (details) {
+                                        if (_activeCorner >= 0) {
+                                          setState(() {
+                                            final pos = details.localPosition;
+                                            final clampedX = pos.dx.clamp(0.0, imgW);
+                                            final clampedY = pos.dy.clamp(0.0, imgH);
+                                            final newPt = math.Point(clampedX, clampedY);
+
+                                            switch (_activeCorner) {
+                                              case 0:
+                                                _topLeft = newPt;
+                                                break;
+                                              case 1:
+                                                _topRight = newPt;
+                                                break;
+                                              case 2:
+                                                _bottomRight = newPt;
+                                                break;
+                                              case 3:
+                                                _bottomLeft = newPt;
+                                                break;
+                                            }
+                                          });
+                                        }
+                                      },
+                                      onPanEnd: (_) => _activeCorner = -1,
+                                      child: CustomPaint(
+                                        painter: _CropOverlayPainter(
+                                          topLeft: _topLeft,
+                                          topRight: _topRight,
+                                          bottomRight: _bottomRight,
+                                          bottomLeft: _bottomLeft,
+                                          activeCorner: _activeCorner,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           );
                         },
                       ),

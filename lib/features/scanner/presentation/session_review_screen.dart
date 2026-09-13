@@ -386,154 +386,159 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         ],
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Column(
-            children: [
-              // Swipeable Big Preview
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: pages.length,
-                  onPageChanged: (idx) => setState(() => _currentPageIndex = idx),
-                  itemBuilder: (context, index) {
-                    final page = pages[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Container(
-                        width: double.infinity,
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A222B),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+          Positioned.fill(
+            child: Column(
+              children: [
+                // Swipeable Big Preview
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: pages.length,
+                    onPageChanged: (idx) => setState(() => _currentPageIndex = idx),
+                    itemBuilder: (context, index) {
+                      final page = pages[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                        child: Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A222B),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _buildPagePreview(page),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _buildPagePreview(page),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
 
-              // Page Editing Action Toolbar
-              Container(
-                height: 64,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1E2632),
-                  border: Border(top: BorderSide(color: Colors.white12)),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildPageActionBtn(
-                      icon: Icons.crop_rounded,
-                      label: 'Crop',
-                      onTap: () => _openCrop(currentPage),
-                    ),
-                    _buildPageActionBtn(
-                      icon: Icons.auto_fix_high_rounded,
-                      label: 'Filters',
-                      onTap: () => _openEnhance(currentPage),
-                    ),
-                    _buildPageActionBtn(
-                      icon: Icons.rotate_right_rounded,
-                      label: 'Rotate',
-                      onTap: () {
-                        widget.scannerController.rotatePage(currentPage.id);
-                        setState(() {});
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bottom Ribbon with Page Counter and Actions
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF141920),
-                  border: Border(top: BorderSide(color: Colors.white10)),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: SafeArea(
-                  top: false,
+                // Page Editing Action Toolbar
+                Container(
+                  height: 64,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1E2632),
+                    border: Border(top: BorderSide(color: Colors.white12)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Add Page Button
-                      OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).pop(), // Back to camera
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white38),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: const Icon(Icons.add_a_photo_rounded, size: 18),
-                        label: const Text('+ Add Page'),
+                      _buildPageActionBtn(
+                        icon: Icons.crop_rounded,
+                        label: 'Crop',
+                        onTap: () => _openCrop(currentPage),
                       ),
-                      const SizedBox(width: 12),
-
-                      // Save to Vault Button
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _showSaveDialog,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.save_rounded, color: Colors.white),
-                          label: Text(
-                            'Save to Vault (${pages.length})',
-                            style: AppTypography.labelLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
+                      _buildPageActionBtn(
+                        icon: Icons.auto_fix_high_rounded,
+                        label: 'Filters',
+                        onTap: () => _openEnhance(currentPage),
+                      ),
+                      _buildPageActionBtn(
+                        icon: Icons.rotate_right_rounded,
+                        label: 'Rotate',
+                        onTap: () {
+                          widget.scannerController.rotatePage(currentPage.id);
+                          setState(() {});
+                        },
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+
+                // Bottom Ribbon with Page Counter and Actions
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF141920),
+                    border: Border(top: BorderSide(color: Colors.white10)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: SafeArea(
+                    top: false,
+                    child: Row(
+                      children: [
+                        // Add Page Button
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).pop(), // Back to camera
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white38),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.add_a_photo_rounded, size: 18),
+                          label: const Text('+ Add Page'),
+                        ),
+                        const SizedBox(width: 12),
+
+                        // Save to Vault Button
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _showSaveDialog,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.save_rounded, color: Colors.white),
+                            label: Text(
+                              'Save to Vault (${pages.length})',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Loading Progress Overlay during PDF Generation
           if (_isGeneratingPdf)
-            Container(
-              color: Colors.black87,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E242B),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(color: AppColors.primary),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Generating Optimized PDF...',
-                        style: AppTypography.titleSmall.copyWith(color: Colors.white),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Applying filters & compressing pages',
-                        style: AppTypography.bodySmall.copyWith(color: Colors.white70),
-                      ),
-                    ],
+            Positioned.fill(
+              child: Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E242B),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: AppColors.primary),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Generating Optimized PDF...',
+                          style: AppTypography.titleSmall.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Applying filters & compressing pages',
+                          style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
