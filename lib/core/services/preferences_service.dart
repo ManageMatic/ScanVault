@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Local preferences management for user settings and privacy flags.
-class PreferencesService {
+/// Local preferences management for user settings, reactive theme, and privacy flags.
+class PreferencesService extends ChangeNotifier {
   static const String _keyFirstLaunch = 'is_first_launch';
   static const String _keyThemeMode = 'app_theme_mode';
   static const String _keyAutoCrop = 'auto_crop_enabled';
@@ -27,7 +27,10 @@ class PreferencesService {
   }
 
   bool get isFirstLaunch => _prefs.getBool(_keyFirstLaunch) ?? true;
-  Future<void> setFirstLaunchCompleted() async => _prefs.setBool(_keyFirstLaunch, false);
+  Future<void> setFirstLaunchCompleted() async {
+    await _prefs.setBool(_keyFirstLaunch, false);
+    notifyListeners();
+  }
 
   ThemeMode get themeMode {
     final modeStr = _prefs.getString(_keyThemeMode);
@@ -46,38 +49,72 @@ class PreferencesService {
     if (mode == ThemeMode.dark) value = 'dark';
     if (mode == ThemeMode.light) value = 'light';
     await _prefs.setString(_keyThemeMode, value);
+    notifyListeners();
   }
 
   bool get autoCropEnabled => _prefs.getBool(_keyAutoCrop) ?? true;
-  Future<void> setAutoCropEnabled(bool value) => _prefs.setBool(_keyAutoCrop, value);
+  Future<void> setAutoCropEnabled(bool value) async {
+    await _prefs.setBool(_keyAutoCrop, value);
+    notifyListeners();
+  }
 
   String get ocrLanguage => _prefs.getString(_keyOcrLanguage) ?? 'English, Spanish';
-  Future<void> setOcrLanguage(String lang) => _prefs.setString(_keyOcrLanguage, lang);
+  Future<void> setOcrLanguage(String lang) async {
+    await _prefs.setString(_keyOcrLanguage, lang);
+    notifyListeners();
+  }
 
   String get pdfQuality => _prefs.getString(_keyPdfQuality) ?? 'high';
-  Future<void> setPdfQuality(String quality) => _prefs.setString(_keyPdfQuality, quality);
+  Future<void> setPdfQuality(String quality) async {
+    await _prefs.setString(_keyPdfQuality, quality);
+    notifyListeners();
+  }
 
   bool get appLockEnabled => _prefs.getBool(_keyAppLock) ?? true;
-  Future<void> setAppLockEnabled(bool value) => _prefs.setBool(_keyAppLock, value);
+  Future<void> setAppLockEnabled(bool value) async {
+    await _prefs.setBool(_keyAppLock, value);
+    notifyListeners();
+  }
 
   bool get biometricEnabled => _prefs.getBool(_keyBiometric) ?? true;
-  Future<void> setBiometricEnabled(bool value) => _prefs.setBool(_keyBiometric, value);
+  Future<void> setBiometricEnabled(bool value) async {
+    await _prefs.setBool(_keyBiometric, value);
+    notifyListeners();
+  }
 
   bool get bruteForceEnabled => _prefs.getBool(_keyBruteForce) ?? false;
-  Future<void> setBruteForceEnabled(bool value) => _prefs.setBool(_keyBruteForce, value);
+  Future<void> setBruteForceEnabled(bool value) async {
+    await _prefs.setBool(_keyBruteForce, value);
+    notifyListeners();
+  }
 
   bool get cameraSoundEnabled => _prefs.getBool(_keyCameraSound) ?? false;
-  Future<void> setCameraSoundEnabled(bool value) => _prefs.setBool(_keyCameraSound, value);
+  Future<void> setCameraSoundEnabled(bool value) async {
+    await _prefs.setBool(_keyCameraSound, value);
+    notifyListeners();
+  }
 
   bool get gyroscopeGuideEnabled => _prefs.getBool(_keyGyroscope) ?? true;
-  Future<void> setGyroscopeGuideEnabled(bool value) => _prefs.setBool(_keyGyroscope, value);
+  Future<void> setGyroscopeGuideEnabled(bool value) async {
+    await _prefs.setBool(_keyGyroscope, value);
+    notifyListeners();
+  }
 
   bool get autoOcrEnabled => _prefs.getBool(_keyAutoOcr) ?? true;
-  Future<void> setAutoOcrEnabled(bool value) => _prefs.setBool(_keyAutoOcr, value);
+  Future<void> setAutoOcrEnabled(bool value) async {
+    await _prefs.setBool(_keyAutoOcr, value);
+    notifyListeners();
+  }
 
   String get defaultFilter => _prefs.getString(_keyDefaultFilter) ?? 'Document Clean';
-  Future<void> setDefaultFilter(String filter) => _prefs.setString(_keyDefaultFilter, filter);
+  Future<void> setDefaultFilter(String filter) async {
+    await _prefs.setString(_keyDefaultFilter, filter);
+    notifyListeners();
+  }
 
   String get flashMode => _prefs.getString(_keyFlashMode) ?? 'Auto';
-  Future<void> setFlashMode(String mode) => _prefs.setString(_keyFlashMode, mode);
+  Future<void> setFlashMode(String mode) async {
+    await _prefs.setString(_keyFlashMode, mode);
+    notifyListeners();
+  }
 }

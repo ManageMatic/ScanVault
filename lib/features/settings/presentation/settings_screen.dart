@@ -530,14 +530,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // SECTION 5: APPEARANCE & THEME
             _buildSectionHeader(
               icon: Icons.palette_outlined,
-              title: 'APPEARANCE',
+              title: 'APPEARANCE & THEME',
             ),
             _buildCardGroup([
-              _buildClickableTile(
-                icon: Icons.palette_rounded,
-                title: 'Theme',
-                subtitle: _getThemeLabel(widget.controller.themeMode),
-                onTap: _showThemeSelector,
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InkWell(
+                      onTap: _showThemeSelector,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.palette_rounded, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'App Theme',
+                                  style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  _getThemeLabel(widget.controller.themeMode),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.unfold_more_rounded, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    // 3-way Theme Selection Segmented Switcher
+                    Row(
+                      children: [
+                        _buildThemeOption(
+                          context,
+                          mode: ThemeMode.system,
+                          label: 'System',
+                          icon: Icons.brightness_auto_rounded,
+                          isSelected: widget.controller.themeMode == ThemeMode.system,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeOption(
+                          context,
+                          mode: ThemeMode.light,
+                          label: 'Light',
+                          icon: Icons.light_mode_rounded,
+                          isSelected: widget.controller.themeMode == ThemeMode.light,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeOption(
+                          context,
+                          mode: ThemeMode.dark,
+                          label: 'Dark',
+                          icon: Icons.dark_mode_rounded,
+                          isSelected: widget.controller.themeMode == ThemeMode.dark,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ]),
             const SizedBox(height: 18),
@@ -849,5 +916,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case ThemeMode.system:
         return 'System Default';
     }
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context, {
+    required ThemeMode mode,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor = isSelected
+        ? (isDark ? AppColors.primary : AppColors.primary)
+        : (isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow);
+
+    final fgColor = isSelected
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => widget.controller.setThemeMode(mode),
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? Colors.transparent : (isDark ? AppColors.darkCardBorder : AppColors.cardBorder),
+                width: 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: fgColor),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: fgColor,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

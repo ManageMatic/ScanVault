@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_dimens.dart';
 import '../constants/app_typography.dart';
+import 'scanner_icon.dart';
 
 /// Navigation bar item descriptor.
 class NavItem {
@@ -16,7 +16,7 @@ class NavItem {
   });
 }
 
-/// Custom Stitch-styled Bottom Navigation Bar for ScanVault.
+/// Custom Stitch-styled Bottom Navigation Bar for ScanVault matching user reference.
 class ScanVaultBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -38,7 +38,7 @@ class ScanVaultBottomNavBar extends StatelessWidget {
     NavItem(
       icon: Icons.folder_outlined,
       activeIcon: Icons.folder_rounded,
-      label: 'Documents',
+      label: 'Docs',
     ),
     NavItem(
       icon: Icons.document_scanner_outlined,
@@ -46,8 +46,8 @@ class ScanVaultBottomNavBar extends StatelessWidget {
       label: 'Scan',
     ),
     NavItem(
-      icon: Icons.grid_view_outlined,
-      activeIcon: Icons.grid_view_rounded,
+      icon: Icons.construction_outlined,
+      activeIcon: Icons.construction_rounded,
       label: 'Tools',
     ),
     NavItem(
@@ -67,20 +67,20 @@ class ScanVaultBottomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         border: Border(
-          top: BorderSide(color: borderColor, width: 1),
+          top: BorderSide(color: borderColor, width: 0.8),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x080F172A),
-            blurRadius: 8,
-            offset: Offset(0, -2),
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, -3),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: AppDimens.bottomNavHeight,
+          height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -101,44 +101,40 @@ class ScanVaultBottomNavBar extends StatelessWidget {
     final isSelected = currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final activeColor = isDark ? AppColors.primaryFixedDim : AppColors.tertiary;
-    final inactiveColor = isDark ? AppColors.darkOnSurfaceVariant : AppColors.onSurfaceVariant;
-    final pillColor = isDark ? AppColors.primary.withValues(alpha: 0.3) : const Color(0xFFCCFBF1);
+    final activeColor = isDark ? AppColors.primaryFixedDim : const Color(0xFF00685F);
+    final inactiveColor = isDark
+        ? AppColors.darkOnSurfaceVariant.withValues(alpha: 0.7)
+        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.75);
 
     return Expanded(
-      child: InkWell(
-        onTap: () => onTap(index),
-        borderRadius: AppDimens.roundedFull,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              width: 58,
-              height: 30,
-              decoration: BoxDecoration(
-                color: isSelected ? pillColor : Colors.transparent,
-                borderRadius: AppDimens.roundedFull,
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                isSelected ? item.activeIcon : item.icon,
-                size: 22,
-                color: isSelected ? activeColor : inactiveColor,
-              ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onTap(index),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isSelected ? item.activeIcon : item.icon,
+                  size: 24,
+                  color: isSelected ? activeColor : inactiveColor,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.label,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: isSelected ? activeColor : inactiveColor,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
-            Text(
-              item.label,
-              style: AppTypography.labelSmall.copyWith(
-                color: isSelected ? activeColor : inactiveColor,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 11,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -156,18 +152,20 @@ class ScanVaultBottomNavBar extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryContainer],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: const Color(0xFF00685F),
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: AppDimens.fabShadow,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00685F).withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.document_scanner_rounded,
-                color: Colors.white,
+              alignment: Alignment.center,
+              child: const StitchScannerIcon(
                 size: 26,
+                color: Colors.white,
               ),
             ),
           ),

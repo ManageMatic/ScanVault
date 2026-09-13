@@ -29,7 +29,7 @@ class StorageStatusCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppDimens.roundedLg,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: AppDimens.roundedLg,
@@ -38,22 +38,22 @@ class StorageStatusCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Shield with active green pulse dot
+              // Shield icon
               Container(
-                width: 44,
-                height: 44,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFE6F5F3),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
                   color: AppColors.primary,
-                  size: 24,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 14),
-              // Storage Information
+              const SizedBox(width: 12),
+              // Storage Information (Responsive & Non-overflowing)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,17 +61,21 @@ class StorageStatusCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'On-Device Storage',
-                          style: AppTypography.titleSmall.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            'On-Device Storage',
+                            style: AppTypography.titleSmall.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             color: AppColors.primary,
                             shape: BoxShape.circle,
@@ -83,20 +87,25 @@ class StorageStatusCard extends StatelessWidget {
                           style: AppTypography.labelSmall.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
+                            fontSize: 11,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       '${totalStorageBytes.formattedFileSize} used • $documentCount local document${documentCount == 1 ? '' : 's'}',
                       style: AppTypography.bodySmall.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               // Lock icon badge
               Container(
                 width: 32,

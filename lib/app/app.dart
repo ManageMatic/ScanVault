@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/constants/app_strings.dart';
 import '../core/services/preferences_service.dart';
-import '../features/settings/domain/settings_controller.dart';
 import 'app_router.dart';
 import 'app_theme.dart';
 
-/// Root ScanVault Application Widget.
+/// Root ScanVault Application Widget with reactive Theme switching.
 class ScanVaultApp extends StatefulWidget {
   final PreferencesService preferencesService;
 
@@ -19,23 +18,19 @@ class ScanVaultApp extends StatefulWidget {
 }
 
 class _ScanVaultAppState extends State<ScanVaultApp> {
-  late final SettingsController _settingsController;
-
   @override
   void initState() {
     super.initState();
-    _settingsController = SettingsController(widget.preferencesService);
-    _settingsController.addListener(_onThemeChanged);
+    widget.preferencesService.addListener(_onPreferencesChanged);
   }
 
   @override
   void dispose() {
-    _settingsController.removeListener(_onThemeChanged);
-    _settingsController.dispose();
+    widget.preferencesService.removeListener(_onPreferencesChanged);
     super.dispose();
   }
 
-  void _onThemeChanged() {
+  void _onPreferencesChanged() {
     if (mounted) setState(() {});
   }
 
@@ -46,7 +41,7 @@ class _ScanVaultAppState extends State<ScanVaultApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: _settingsController.themeMode,
+      themeMode: widget.preferencesService.themeMode,
       initialRoute: AppRouter.splash,
       onGenerateRoute: (settings) => AppRouter.generateRoute(settings, widget.preferencesService),
     );

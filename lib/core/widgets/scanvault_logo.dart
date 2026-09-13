@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_typography.dart';
 
-/// Reusable brand logo header for ScanVault.
+/// Pixel-perfect vector brand logo for ScanVault conforming to Stitch brand logo specs:
+/// - Teal gradient rounded squircle
+/// - White document sheet with clean document line bars
+/// - Laser scan beam across document
+/// - Vault lock / shield mark at bottom corner
 class ScanVaultLogo extends StatelessWidget {
   final double size;
   final bool showText;
@@ -21,63 +25,16 @@ class ScanVaultLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // App Icon Symbol with corner scan lines
-        Container(
+        // Custom Brand Emblem
+        SizedBox(
           width: size,
           height: size,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(size * 0.28),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: size * 0.25,
-                offset: Offset(0, size * 0.1),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(
-                Icons.document_scanner_rounded,
-                size: size * 0.58,
-                color: Colors.white,
-              ),
-              // Corner accent brackets
-              Positioned(
-                top: size * 0.12,
-                left: size * 0.12,
-                child: Container(
-                  width: size * 0.18,
-                  height: size * 0.18,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: AppColors.primaryFixed, width: 1.5),
-                      left: BorderSide(color: AppColors.primaryFixed, width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: size * 0.12,
-                right: size * 0.12,
-                child: Container(
-                  width: size * 0.18,
-                  height: size * 0.18,
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: AppColors.primaryFixed, width: 1.5),
-                      right: BorderSide(color: AppColors.primaryFixed, width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: CustomPaint(
+            painter: _ScanVaultBrandLogoPainter(),
           ),
         ),
         if (showText) ...[
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -116,4 +73,102 @@ class ScanVaultLogo extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ScanVaultBrandLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final scale = w / 120.0;
+
+    // 1. Background gradient squircle
+    final rect = Rect.fromLTWH(8 * scale, 8 * scale, 104 * scale, 104 * scale);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(28 * scale));
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(rect);
+    canvas.drawRRect(rrect, bgPaint);
+
+    // 2. White Document sheet
+    final docRect = Rect.fromLTWH(34 * scale, 28 * scale, 52 * scale, 64 * scale);
+    final docRRect = RRect.fromRectAndRadius(docRect, Radius.circular(8 * scale));
+    final docPaint = Paint()..color = Colors.white.withValues(alpha: 0.96);
+    canvas.drawRRect(docRRect, docPaint);
+
+    // 3. Document Lines
+    final tealLinePaint = Paint()..color = const Color(0xFF0D9488).withValues(alpha: 0.85);
+    final grayLinePaint = Paint()..color = const Color(0xFFCBD5E1);
+
+    // Header teal line
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(42 * scale, 38 * scale, 26 * scale, 4 * scale),
+        Radius.circular(2 * scale),
+      ),
+      tealLinePaint,
+    );
+    // Gray line 1
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(42 * scale, 48 * scale, 36 * scale, 4 * scale),
+        Radius.circular(2 * scale),
+      ),
+      grayLinePaint,
+    );
+    // Gray line 2
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(42 * scale, 58 * scale, 30 * scale, 4 * scale),
+        Radius.circular(2 * scale),
+      ),
+      grayLinePaint,
+    );
+
+    // 4. Laser Scan Beam
+    final beamPaint = Paint()
+      ..color = const Color(0xFF14B8A6)
+      ..strokeWidth = 3 * scale
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(26 * scale, 62 * scale),
+      Offset(94 * scale, 62 * scale),
+      beamPaint,
+    );
+
+    // 5. Vault Lock Mark at bottom right corner
+    final lockBgPaint = Paint()..color = const Color(0xFF0D9488);
+    canvas.drawCircle(Offset(68 * scale, 74 * scale), 12 * scale, lockBgPaint);
+
+    // Lock Shackle
+    final shacklePaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2 * scale
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final shacklePath = Path()
+      ..moveTo(64 * scale, 73 * scale)
+      ..lineTo(64 * scale, 71 * scale)
+      ..arcToPoint(
+        Offset(72 * scale, 71 * scale),
+        radius: Radius.circular(4 * scale),
+      )
+      ..lineTo(72 * scale, 73 * scale);
+    canvas.drawPath(shacklePath, shacklePaint);
+
+    // Lock Body
+    final lockBodyPaint = Paint()..color = Colors.white;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(63 * scale, 73 * scale, 10 * scale, 8 * scale),
+        Radius.circular(2 * scale),
+      ),
+      lockBodyPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
