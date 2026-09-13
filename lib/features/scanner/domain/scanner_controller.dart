@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import '../../../shared/models/scan_session.dart';
+import '../../image_processing/domain/image_processor.dart';
 import 'scanned_page_item.dart';
 
 /// Comprehensive controller managing real camera viewfinder, capture pipeline, and session pages.
@@ -115,12 +116,11 @@ class ScannerController extends ChangeNotifier {
         imagePath = xFile.path;
         imageBytes = await xFile.readAsBytes();
       } else {
-        // Fallback simulator placeholder
+        // Fallback placeholder with valid JPEG image encoding
         final tempDir = await getTemporaryDirectory();
-        final dummyPath = p.join(tempDir.path, 'scan_sim_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final dummyPath = p.join(tempDir.path, 'scan_${DateTime.now().millisecondsSinceEpoch}.jpg');
         final dummyFile = File(dummyPath);
-        // Create 1200x1600 dummy page
-        final dummyImg = Uint8List.fromList(List.generate(100, (i) => 255));
+        final dummyImg = ImageProcessor.createSampleDocumentBitmap();
         await dummyFile.writeAsBytes(dummyImg);
         imagePath = dummyPath;
         imageBytes = dummyImg;
@@ -145,16 +145,49 @@ class ScannerController extends ChangeNotifier {
     }
   }
 
+  /// Add an existing page item into this controller session
+  void addExistingPage(ScannedPageItem page) {
+    _pages.add(page);
+    notifyListeners();
+  }
+
   /// Import photos from phone gallery
   Future<List<ScannedPageItem>> importFromGallery() async {
     try {
-      final images = await _picker.pickMultiImage();
+      List<XFile> images = [];
+      try {
+        images = await _picker.pickMultiImage();
+      } catch (e) {
+        debugPrint('pickMultiImage fallback: $e');
+        final single = await _picker.pickImage(source: ImageSource.gallery);
+        if (single != null) images = [single];
+      }
+
+      if (images.isEmpty) {
+        final single = await _picker.pickImage(source: ImageSource.gallery);
+        if (single != null) images = [single];
+      }
+
+      if (images.isEmpty) return [];
+
+      final tempDir = await getTemporaryDirectory();
       final addedPages = <ScannedPageItem>[];
+
       for (final img in images) {
         final bytes = await img.readAsBytes();
+        if (bytes.isEmpty) continue;
+
+        // Persist to temporary file to guarantee a valid file path on local filesystem
+        final localPath = p.join(
+          tempDir.path,
+          'imported_${DateTime.now().millisecondsSinceEpoch}_${const Uuid().v4().substring(0, 8)}.jpg',
+        );
+        final localFile = File(localPath);
+        await localFile.writeAsBytes(bytes);
+
         final page = ScannedPageItem(
           id: const Uuid().v4(),
-          originalImagePath: img.path,
+          originalImagePath: localPath,
           cachedProcessedBytes: bytes,
           capturedAt: DateTime.now(),
         );

@@ -167,6 +167,18 @@ class ImageProcessor {
     }
   }
 
+  /// Generates a clean valid sample document JPEG bitmap
+  static Uint8List createSampleDocumentBitmap() {
+    final image = img.Image(width: 800, height: 1100);
+    img.fill(image, color: img.ColorRgb8(248, 250, 252));
+    img.drawRect(image, x1: 40, y1: 40, x2: 760, y2: 1060, color: img.ColorRgb8(200, 215, 225));
+    img.drawRect(image, x1: 80, y1: 120, x2: 450, y2: 150, color: img.ColorRgb8(100, 120, 140));
+    img.drawRect(image, x1: 80, y1: 180, x2: 720, y2: 195, color: img.ColorRgb8(180, 195, 210));
+    img.drawRect(image, x1: 80, y1: 215, x2: 680, y2: 230, color: img.ColorRgb8(180, 195, 210));
+    img.drawRect(image, x1: 80, y1: 250, x2: 700, y2: 265, color: img.ColorRgb8(180, 195, 210));
+    return Uint8List.fromList(img.encodeJpg(image, quality: 85));
+  }
+
   static int _getJpegQualityForPreset(CompressionPreset preset) {
     switch (preset) {
       case CompressionPreset.small:

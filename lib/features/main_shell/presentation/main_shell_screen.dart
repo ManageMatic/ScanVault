@@ -13,7 +13,9 @@ import '../../documents/presentation/documents_screen.dart';
 import '../../home/domain/home_controller.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../pdf_tools/presentation/pdf_tools_screen.dart';
+import '../../scanner/domain/scanner_controller.dart';
 import '../../scanner/presentation/scanner_screen.dart';
+import '../../scanner/presentation/session_review_screen.dart';
 import '../../settings/domain/settings_controller.dart';
 import '../../settings/presentation/settings_screen.dart';
 
@@ -100,6 +102,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  void _openGalleryImport() async {
+    final controller = ScannerController();
+    final pages = await controller.importFromGallery();
+    if (pages.isNotEmpty && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SessionReviewScreen(
+            scannerController: controller,
+            userId: _authController.currentUser?.id ?? 'local_user',
+            onSaved: () {
+              Navigator.of(context).pop();
+              _homeController.refresh();
+              _documentsController.loadData();
+            },
+          ),
+        ),
+      );
+    }
+  }
+
   void _openAccount() {
     if (_authController.isAuthenticated) {
       Navigator.of(context).push(
@@ -139,6 +161,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         authController: _authController,
         onNavigateToDocuments: () => setState(() => _currentIndex = 1),
         onOpenScanner: _openScanner,
+        onImportPhotos: _openGalleryImport,
         onOpenTools: () => setState(() => _currentIndex = 3),
         onOpenAccount: _openAccount,
       ),

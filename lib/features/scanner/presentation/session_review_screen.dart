@@ -398,29 +398,24 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                   itemBuilder: (context, index) {
                     final page = pages[index];
                     return Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                       child: Center(
                         child: Container(
+                          constraints: const BoxConstraints(maxWidth: 600),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            color: const Color(0xFF1A2026),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white12),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: page.cachedProcessedBytes != null
-                              ? Image.memory(
-                                  page.cachedProcessedBytes!,
-                                  fit: BoxFit.contain,
-                                )
-                              : Image.file(
-                                  File(page.originalImagePath),
-                                  fit: BoxFit.contain,
-                                ),
+                          child: _buildPagePreview(page),
                         ),
                       ),
                     );
@@ -430,8 +425,11 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
               // Page Editing Action Toolbar
               Container(
-                color: const Color(0xFF14191E),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF161C22),
+                  border: Border(top: BorderSide(color: Colors.white10)),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -535,6 +533,53 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPagePreview(ScannedPageItem page) {
+    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
+      return Image.memory(
+        page.cachedProcessedBytes!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildFileFallback(page.originalImagePath);
+        },
+      );
+    }
+    return _buildFileFallback(page.originalImagePath);
+  }
+
+  Widget _buildFileFallback(String path) {
+    if (path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildErrorCard('Image could not be rendered'),
+        );
+      }
+    }
+    return _buildErrorCard('Image file not found on device');
+  }
+
+  Widget _buildErrorCard(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.broken_image_rounded, color: Colors.white38, size: 56),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

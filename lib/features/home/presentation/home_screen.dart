@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
   final AuthController? authController;
   final VoidCallback onNavigateToDocuments;
   final VoidCallback onOpenScanner;
+  final VoidCallback onImportPhotos;
   final VoidCallback onOpenTools;
   final VoidCallback? onOpenAccount;
 
@@ -28,6 +29,7 @@ class HomeScreen extends StatefulWidget {
     this.authController,
     required this.onNavigateToDocuments,
     required this.onOpenScanner,
+    required this.onImportPhotos,
     required this.onOpenTools,
     this.onOpenAccount,
   });
@@ -60,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.onOpenScanner();
         break;
       case QuickActionType.importPhotos:
+        widget.onImportPhotos();
+        break;
       case QuickActionType.importPdf:
       case QuickActionType.createPdf:
       case QuickActionType.extractOcr:
