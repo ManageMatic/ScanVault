@@ -415,22 +415,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ]),
             const SizedBox(height: 18),
 
-            // SECTION 4: STORAGE & SYSTEM CACHE
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionHeader(
-                  icon: Icons.pie_chart_outline_rounded,
-                  title: 'STORAGE & SYSTEM CACHE',
-                ),
-                Text(
-                  '1.24 GB Used',
-                  style: AppTypography.labelSmall.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
+            // SECTION 4: STORAGE & CACHE
+            _buildSectionHeader(
+              icon: Icons.pie_chart_outline_rounded,
+              title: 'STORAGE & CACHE',
+              trailingText: '1.24 GB Used',
             ),
             Container(
               padding: const EdgeInsets.all(16),
@@ -469,10 +458,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  // Legends
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const SizedBox(height: 12),
+                  // Responsive Legends
+                  Wrap(
+                    spacing: 14,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.start,
                     children: [
                       _buildStorageLegend('Docs', '980 MB', AppColors.primary),
                       _buildStorageLegend('Thumbs', '140 MB', AppColors.secondaryContainer),
@@ -711,21 +702,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader({required IconData icon, required String title}) {
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    String? trailingText,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(left: 2, bottom: 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text(
-            title,
-            style: AppTypography.labelSmall.copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: AppColors.primary,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: AppTypography.labelSmall.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
           ),
+          if (trailingText != null)
+            Text(
+              trailingText,
+              style: AppTypography.labelSmall.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
         ],
       ),
     );
