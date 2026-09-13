@@ -13,6 +13,8 @@ import 'widgets/recent_documents_section.dart';
 
 import '../../auth/domain/auth_controller.dart';
 import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
+import '../../pdf_creation/domain/pdf_models.dart';
+import '../../pdf_viewer/presentation/pdf_viewer_screen.dart';
 
 /// Primary Home Dashboard Screen adhering to Google Stitch specifications.
 class HomeScreen extends StatefulWidget {
@@ -106,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Pages: ${document.pageCount} • Size: ${(document.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
+                '${document.pageCount} page(s) • Size: ${formatBytes(document.fileSize)} • ${document.compressionPreset.name.toUpperCase()}',
                 style: AppTypography.bodyMedium,
               ),
               if (document.extractedOcrText != null && document.extractedOcrText!.isNotEmpty) ...[
@@ -149,6 +151,36 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
               const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PdfViewerScreen(
+                          document: document,
+                          onDeleted: widget.controller.refresh,
+                        ),
+                      ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                  label: Text(
+                    'Open PDF in Viewer',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
             ],
           ),
         ),

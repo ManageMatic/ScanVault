@@ -1,136 +1,74 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:path/path.dart' as p;
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:uuid/uuid.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
-import '../../image_processing/domain/image_processor.dart';
-import '../../ocr/data/mlkit_ocr_service.dart';
+import '../data/local_pdf_repository.dart';
+import 'pdf_models.dart';
+import 'pdf_repository.dart';
 
 class PdfCreationParams {
   final String title;
   final List<Uint8List> pageImages;
+  final List<int>? pageRotations;
   final CompressionPreset compressionPreset;
+  final PdfPageSize pageSize;
   final String? folderId;
+  final String? author;
 
   const PdfCreationParams({
     required this.title,
     required this.pageImages,
+    this.pageRotations,
     this.compressionPreset = CompressionPreset.balanced,
+    this.pageSize = PdfPageSize.a4,
     this.folderId,
+    this.author,
   });
 }
 
-/// Service generating small, optimized PDF documents from processed pages.
+/// Service coordinating PDF compilation, optimization, and SQLite metadata registration.
 class PdfGeneratorService {
-  final AppDatabase _database;
-  final StorageManagerService _storageManager;
+  final PdfRepository _repository;
 
-  PdfGeneratorService(this._database, this._storageManager);
+  PdfGeneratorService(AppDatabase database, StorageManagerService storageManager)
+      : _repository = LocalPdfRepository(
+          database: database,
+          storageManager: storageManager,
+        );
 
   Future<Document> createOptimizedPdf({
     required String userId,
     required PdfCreationParams params,
   }) async {
-    final documentId = const Uuid().v4();
-    final docDir = await _storageManager.getDocumentDirectory(userId, documentId);
-    final pdfFilePath = p.join(docDir.path, 'final.pdf');
-    final pagesDir = Directory(p.join(docDir.path, 'pages'));
-    if (!await pagesDir.exists()) await pagesDir.create(recursive: true);
+    final docId = const Uuid().v4();
 
-    final pdf = pw.Document(
-      title: params.title,
-      author: 'ScanVault Offline Engine',
-      creator: 'ScanVault',
-    );
-
-    Uint8List? firstPageProcessedBytes;
-
+    final pageInputs = <PdfPageInput>[];
     for (var i = 0; i < params.pageImages.length; i++) {
-      final rawPage = params.pageImages[i];
-      // Optimize page with selected compression preset
-      final processedBytes = ImageProcessor.processImageSync(
-        rawBytes: rawPage,
-        params: const ImageEnhancementParams(),
-        preset: params.compressionPreset,
-      );
+      final rotation = (params.pageRotations != null && i < params.pageRotations!.length)
+          ? params.pageRotations![i]
+          : 0;
 
-      if (i == 0) firstPageProcessedBytes = processedBytes;
-
-      // Save individual page image inside doc directory
-      final pageFile = File(p.join(pagesDir.path, 'page_${i + 1}.jpg'));
-      await pageFile.writeAsBytes(processedBytes);
-
-      final pdfImage = pw.MemoryImage(processedBytes);
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: pw.EdgeInsets.zero,
-          build: (pw.Context context) {
-            return pw.FullPage(
-              ignoreMargins: true,
-              child: pw.Image(pdfImage, fit: pw.BoxFit.contain),
-            );
-          },
+      pageInputs.add(
+        PdfPageInput(
+          imageBytes: params.pageImages[i],
+          rotationDegrees: rotation,
+          pageNumber: i + 1,
         ),
       );
     }
 
-    // Save final PDF to disk
-    final pdfBytes = await pdf.save();
-    final finalPdfFile = File(pdfFilePath);
-    await finalPdfFile.writeAsBytes(pdfBytes);
-
-    final realSizeBytes = await finalPdfFile.length();
-
-    // Generate fast thumbnail in user thumbnails directory
-    final thumbsDir = await _storageManager.getUserThumbnailsDirectory(userId);
-    final thumbPath = p.join(thumbsDir.path, '$documentId.jpg');
-    if (firstPageProcessedBytes != null) {
-      await ImageProcessor.generateThumbnail(
-        imageBytes: firstPageProcessedBytes,
-        targetPath: thumbPath,
-      );
-    }
-
-    // Extract on-device OCR text from pages
-    final ocrService = MLKitOcrService();
-    final ocrTexts = <String>[];
-    for (final pageBytes in params.pageImages) {
-      try {
-        final res = await ocrService.recognizeTextFromBytes(pageBytes);
-        if (res.fullText.isNotEmpty) {
-          ocrTexts.add(res.fullText);
-        }
-      } catch (e) {
-        // Continue silently if single page fails OCR
-      }
-    }
-    final combinedOcrText = ocrTexts.join('\n\n').trim();
-
-    final doc = Document(
-      id: documentId,
-      title: params.title.isNotEmpty ? params.title : 'Scan_${DateTime.now().millisecondsSinceEpoch}',
-      pdfPath: pdfFilePath,
-      thumbnailPath: thumbPath,
-      folderId: params.folderId,
-      fileSize: realSizeBytes,
+    final request = PdfGenerationRequest(
+      documentId: docId,
+      userId: userId,
+      title: params.title.trim().isNotEmpty ? params.title.trim() : 'Scan Document',
+      pages: pageInputs,
       compressionPreset: params.compressionPreset,
-      extractedOcrText: combinedOcrText.isNotEmpty ? combinedOcrText : null,
-      ocrStatus: combinedOcrText.isNotEmpty ? OcrStatus.completed : OcrStatus.none,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      pageSize: params.pageSize,
+      folderId: params.folderId,
+      author: params.author,
     );
 
-    // Save metadata to SQLite
-    await _database.insertDocument(userId, doc);
-
-    // Cleanup user temporary files
-    await _storageManager.cleanupTempDirectory(userId);
-
-    return doc;
+    return _repository.createDocumentPdf(userId: userId, request: request);
   }
 }

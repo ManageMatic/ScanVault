@@ -8,6 +8,8 @@ import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
 import '../../../shared/models/folder.dart';
 import '../../pdf_creation/domain/pdf_generator_service.dart';
+import '../../pdf_creation/domain/pdf_models.dart';
+import '../../pdf_viewer/presentation/pdf_viewer_screen.dart';
 import '../domain/scanned_page_item.dart';
 import '../domain/scanner_controller.dart';
 import 'crop_screen.dart';
@@ -35,6 +37,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   int _currentPageIndex = 0;
   bool _isGeneratingPdf = false;
   CompressionPreset _selectedPreset = CompressionPreset.balanced;
+  PdfPageSize _selectedPageSize = PdfPageSize.a4;
   List<Folder> _folders = [];
   String? _selectedFolderId;
   final TextEditingController _titleController = TextEditingController();
@@ -181,6 +184,43 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                const SizedBox(height: 18),
+
+                // Page Sizing Formats
+                Text(
+                  'Page Sizing Format',
+                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildPageSizeOption(
+                      title: 'A4',
+                      desc: 'Standard',
+                      size: PdfPageSize.a4,
+                      selected: _selectedPageSize,
+                      onTap: () => setModalState(() => _selectedPageSize = PdfPageSize.a4),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPageSizeOption(
+                      title: 'Letter',
+                      desc: 'US Standard',
+                      size: PdfPageSize.letter,
+                      selected: _selectedPageSize,
+                      onTap: () => setModalState(() => _selectedPageSize = PdfPageSize.letter),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPageSizeOption(
+                      title: 'Auto',
+                      desc: 'Fit Image',
+                      size: PdfPageSize.auto,
+                      selected: _selectedPageSize,
+                      onTap: () => setModalState(() => _selectedPageSize = PdfPageSize.auto),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
                 // Compression Presets
                 Text(
                   'PDF Optimization Preset',
@@ -247,6 +287,51 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     );
   }
 
+  Widget _buildPageSizeOption({
+    required String title,
+    required String desc,
+    required PdfPageSize size,
+    required PdfPageSize selected,
+    required VoidCallback onTap,
+  }) {
+    final isSel = size == selected;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSel ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSel ? AppColors.primary : AppColors.outlineVariant,
+              width: isSel ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                title,
+                style: AppTypography.labelMedium.copyWith(
+                  color: isSel ? AppColors.primary : null,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: AppTypography.labelSmall.copyWith(
+                  color: isSel ? AppColors.primary : Colors.grey,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPresetOption({
     required String title,
     required String desc,
@@ -298,8 +383,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     try {
       final pages = widget.scannerController.pages;
       final rawImages = <dynamic>[];
+      final rotations = <int>[];
 
       for (final p in pages) {
+        rotations.add(p.enhancementParams.rotationDegrees);
         if (p.cachedProcessedBytes != null) {
           rawImages.add(p.cachedProcessedBytes!);
         } else {
@@ -315,7 +402,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         params: PdfCreationParams(
           title: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : 'Scan Document',
           pageImages: rawImages.cast(),
+          pageRotations: rotations,
           compressionPreset: _selectedPreset,
+          pageSize: _selectedPageSize,
           folderId: _selectedFolderId,
         ),
       );
@@ -325,9 +414,20 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved "${doc.title}" (${(doc.fileSize / 1024).toStringAsFixed(1)} KB) to Vault'),
+            content: Text('Saved "${doc.title}" (${formatBytes(doc.fileSize)}) to Vault'),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'OPEN',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PdfViewerScreen(document: doc),
+                  ),
+                );
+              },
+            ),
           ),
         );
         widget.onSaved();

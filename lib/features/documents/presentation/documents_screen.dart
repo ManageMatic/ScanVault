@@ -7,9 +7,12 @@ import '../../../core/extensions/file_size_extensions.dart';
 import '../../../core/widgets/document_card.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/loading_state_view.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../shared/models/document.dart';
 import '../../ocr/data/mlkit_ocr_service.dart';
 import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
+import '../../pdf_creation/domain/pdf_models.dart';
+import '../../pdf_viewer/presentation/pdf_viewer_screen.dart';
 import '../domain/documents_controller.dart';
 import 'widgets/document_search_bar.dart';
 import 'widgets/sort_filter_sheet.dart';
@@ -75,8 +78,21 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         }
         break;
       case DocumentMenuAction.open:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PdfViewerScreen(
+              document: doc,
+              onDeleted: () => widget.controller.deleteDocument(doc.id),
+            ),
+          ),
+        );
+        break;
       case DocumentMenuAction.share:
+        _shareDocument(doc);
+        break;
       case DocumentMenuAction.exportPdf:
+        _exportDocument(doc);
+        break;
       case DocumentMenuAction.rename:
       case DocumentMenuAction.moveToFolder:
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,6 +114,71 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           ),
         );
         break;
+    }
+  }
+
+  void _shareDocument(Document doc) async {
+    final file = File(doc.filePath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF file not found on device'), behavior: SnackBarBehavior.floating),
+        );
+      }
+      return;
+    }
+    final xFile = XFile(file.path, mimeType: 'application/pdf', name: sanitizePdfFilename(doc.title));
+    await Share.shareXFiles([xFile], text: doc.title);
+  }
+
+  void _exportDocument(Document doc) async {
+    final file = File(doc.filePath);
+    if (!await file.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF file not found on device'), behavior: SnackBarBehavior.floating),
+        );
+      }
+      return;
+    }
+
+    try {
+      Directory? targetDir;
+      if (Platform.isAndroid) {
+        targetDir = Directory('/storage/emulated/0/Download');
+        if (!await targetDir.exists()) {
+          targetDir = Directory('/sdcard/Download');
+        }
+      }
+
+      if (targetDir == null || !await targetDir.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not access Downloads. Use Share instead.'), behavior: SnackBarBehavior.floating),
+          );
+        }
+        return;
+      }
+
+      final safeName = sanitizePdfFilename(doc.title);
+      final destPath = '${targetDir.path}/$safeName';
+      await file.copy(destPath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported to Downloads: $safeName'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
     }
   }
 
