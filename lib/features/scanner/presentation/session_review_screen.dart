@@ -399,24 +399,23 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                     final page = pages[index];
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Center(
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A2026),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: _buildPagePreview(page),
+                      child: Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A222B),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _buildPagePreview(page),
                       ),
                     );
                   },
@@ -425,11 +424,13 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
               // Page Editing Action Toolbar
               Container(
+                height: 64,
+                width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF161C22),
-                  border: Border(top: BorderSide(color: Colors.white10)),
+                  color: Color(0xFF1E2632),
+                  border: Border(top: BorderSide(color: Colors.white12)),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -457,9 +458,14 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
               // Bottom Ribbon with Page Counter and Actions
               Container(
-                color: const Color(0xFF101418),
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF141920),
+                  border: Border(top: BorderSide(color: Colors.white10)),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: SafeArea(
+                  top: false,
                   child: Row(
                     children: [
                       // Add Page Button
@@ -467,8 +473,8 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                         onPressed: () => Navigator.of(context).pop(), // Back to camera
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white30),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          side: const BorderSide(color: Colors.white38),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         icon: const Icon(Icons.add_a_photo_rounded, size: 18),
@@ -482,7 +488,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
                           onPressed: _showSaveDialog,
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           icon: const Icon(Icons.save_rounded, color: Colors.white),
@@ -542,7 +548,10 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       return Image.memory(
         page.cachedProcessedBytes!,
         fit: BoxFit.contain,
+        width: double.infinity,
+        height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
+          debugPrint('Image.memory error in review: $error');
           return _buildFileFallback(page.originalImagePath);
         },
       );
@@ -557,7 +566,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
         return Image.file(
           file,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildErrorCard('Image could not be rendered'),
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Image.file error in review: $error');
+            return _buildErrorCard('Image could not be rendered');
+          },
         );
       }
     }

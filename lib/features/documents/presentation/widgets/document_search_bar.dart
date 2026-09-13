@@ -57,7 +57,7 @@ class DocumentSearchBar extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                       isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
