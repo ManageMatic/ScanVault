@@ -71,8 +71,8 @@ class ScanVaultBottomNavBar extends StatelessWidget {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 10,
+            color: Color(0x080F172A),
+            blurRadius: 8,
             offset: Offset(0, -2),
           ),
         ],
@@ -101,7 +101,7 @@ class ScanVaultBottomNavBar extends StatelessWidget {
     final isSelected = currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final activeColor = isDark ? AppColors.primaryFixedDim : AppColors.primary;
+    final activeColor = isDark ? AppColors.primaryFixedDim : AppColors.tertiary;
     final inactiveColor = isDark ? AppColors.darkOnSurfaceVariant : AppColors.onSurfaceVariant;
     final pillColor = isDark ? AppColors.primary.withValues(alpha: 0.3) : const Color(0xFFCCFBF1);
 
@@ -115,14 +115,17 @@ class ScanVaultBottomNavBar extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              curve: Curves.easeOutCubic,
+              width: 58,
+              height: 30,
               decoration: BoxDecoration(
                 color: isSelected ? pillColor : Colors.transparent,
                 borderRadius: AppDimens.roundedFull,
               ),
+              alignment: Alignment.center,
               child: Icon(
                 isSelected ? item.activeIcon : item.icon,
-                size: 24,
+                size: 22,
                 color: isSelected ? activeColor : inactiveColor,
               ),
             ),
@@ -132,6 +135,7 @@ class ScanVaultBottomNavBar extends StatelessWidget {
               style: AppTypography.labelSmall.copyWith(
                 color: isSelected ? activeColor : inactiveColor,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 11,
               ),
             ),
           ],
@@ -147,17 +151,21 @@ class ScanVaultBottomNavBar extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onScanPressed,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             child: Container(
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryContainer],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: AppDimens.fabShadow,
               ),
               child: const Icon(
-                Icons.camera_alt_rounded,
+                Icons.document_scanner_rounded,
                 color: Colors.white,
                 size: 26,
               ),

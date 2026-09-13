@@ -9,7 +9,7 @@ import 'document_thumbnail.dart';
 
 enum DocumentMenuAction { open, share, exportPdf, rename, moveToFolder, ocr, favorite, delete }
 
-/// Reusable Document Card supporting Grid and List displays as specified in Stitch designs.
+/// Reusable Document Card perfectly replicating the Stitch specification.
 class DocumentCard extends StatelessWidget {
   final Document document;
   final VoidCallback onTap;
@@ -38,6 +38,7 @@ class DocumentCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.darkSurfaceContainerLowest : AppColors.surfaceContainerLowest;
     final borderColor = isDark ? AppColors.darkCardBorder : AppColors.cardBorder;
+    final containerBg = isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainer;
 
     return Material(
       color: Colors.transparent,
@@ -45,7 +46,7 @@ class DocumentCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppDimens.roundedLg,
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: AppDimens.roundedLg,
@@ -54,10 +55,10 @@ class DocumentCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // 3:4 Thumbnail
+              // 3:4 Aspect Ratio Thumbnail with page badge & verified tag
               SizedBox(
-                width: 54,
-                height: 72,
+                width: 60,
+                height: 76,
                 child: DocumentThumbnail(document: document),
               ),
               const SizedBox(width: 14),
@@ -72,7 +73,7 @@ class DocumentCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             document.title,
-                            style: AppTypography.titleMedium.copyWith(
+                            style: AppTypography.titleSmall.copyWith(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.w700,
                             ),
@@ -80,60 +81,71 @@ class DocumentCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (document.isFavorite)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4),
-                            child: Icon(
-                              Icons.star_rounded,
-                              size: 18,
-                              color: Color(0xFFF59E0B),
-                            ),
+                        if (document.isFavorite) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: AppColors.secondary,
                           ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      '${document.createdAt.relativeTime} • ${document.fileSize.formattedFileSize}',
+                      '${document.pageCount} pages • ${document.fileSize.formattedFileSize}',
                       style: AppTypography.bodySmall.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        if (document.hasOcr)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'OCR',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                        // Relative time chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: containerBg,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 12,
+                                color: isDark ? AppColors.primaryFixedDim : AppColors.primary,
                               ),
+                              const SizedBox(width: 4),
+                              Text(
+                                document.createdAt.relativeTime,
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark ? AppColors.primaryFixedDim : AppColors.primary,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // Format / OCR chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            document.hasOcr ? 'OCR' : (document.type == DocumentType.pdf ? 'PDF/A-1' : 'SCAN'),
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        if (document.type == DocumentType.pdf)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.pdfRed.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'PDF',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.pdfRed,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -185,7 +197,7 @@ class DocumentCard extends StatelessWidget {
                           child: Icon(
                             Icons.star_rounded,
                             size: 16,
-                            color: Color(0xFFF59E0B),
+                            color: AppColors.secondary,
                           ),
                         ),
                       ),
@@ -209,7 +221,7 @@ class DocumentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${document.createdAt.relativeTime} • ${document.fileSize.formattedFileSize}',
+                      '${document.pageCount}p • ${document.fileSize.formattedFileSize}',
                       style: AppTypography.bodySmall.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
@@ -245,15 +257,15 @@ class DocumentCard extends StatelessWidget {
       itemBuilder: (context) => [
         PopupMenuItem(
           value: DocumentMenuAction.open,
-          child: _buildMenuItem(Icons.visibility_outlined, 'Open'),
+          child: _buildMenuItem(Icons.visibility_outlined, 'Open Document'),
         ),
         PopupMenuItem(
           value: DocumentMenuAction.share,
-          child: _buildMenuItem(Icons.share_outlined, 'Share Document'),
+          child: _buildMenuItem(Icons.share_outlined, 'Share (Air-Gapped)'),
         ),
         PopupMenuItem(
           value: DocumentMenuAction.exportPdf,
-          child: _buildMenuItem(Icons.picture_as_pdf_outlined, 'Export as PDF'),
+          child: _buildMenuItem(Icons.picture_as_pdf_outlined, 'Export PDF'),
         ),
         PopupMenuItem(
           value: DocumentMenuAction.favorite,
@@ -264,11 +276,11 @@ class DocumentCard extends StatelessWidget {
         ),
         PopupMenuItem(
           value: DocumentMenuAction.rename,
-          child: _buildMenuItem(Icons.edit_outlined, 'Rename'),
+          child: _buildMenuItem(Icons.edit_outlined, 'Rename Document'),
         ),
         PopupMenuItem(
           value: DocumentMenuAction.ocr,
-          child: _buildMenuItem(Icons.text_fields_outlined, 'Extract Text (OCR)'),
+          child: _buildMenuItem(Icons.text_fields_outlined, 'Extract OCR Text'),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(

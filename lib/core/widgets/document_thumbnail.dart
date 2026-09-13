@@ -5,7 +5,7 @@ import '../constants/app_dimens.dart';
 import '../constants/app_typography.dart';
 import '../../shared/models/document.dart';
 
-/// Renders a responsive 3:4 document thumbnail with page count badge and fallback document art.
+/// Renders a responsive 3:4 document thumbnail matching the Stitch specifications.
 class DocumentThumbnail extends StatelessWidget {
   final Document document;
   final double? width;
@@ -23,14 +23,14 @@ class DocumentThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final containerBg = isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainerLow;
+    final containerBg = isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainer;
 
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         color: containerBg,
-        borderRadius: AppDimens.roundedMd,
+        borderRadius: AppDimens.roundedDefault,
         border: Border.all(
           color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
           width: 0.8,
@@ -49,22 +49,41 @@ class DocumentThumbnail extends StatelessWidget {
           else
             _buildFallbackPreview(context, isDark),
 
-          // Page Count Badge
+          // Stitch Top-left Verified Badge
+          Positioned(
+            top: 4,
+            left: 4,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                size: 11,
+                color: Colors.white,
+              ),
+            ),
+          ),
+
+          // Stitch Bottom-right Page Count Badge
           if (showPageBadge)
             Positioned(
-              bottom: 6,
-              right: 6,
+              bottom: 4,
+              right: 4,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.65),
-                  borderRadius: BorderRadius.circular(6),
+                  color: isDark ? Colors.black.withValues(alpha: 0.75) : AppColors.surfaceDim.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${document.pageCount}p',
                   style: AppTypography.labelSmall.copyWith(
-                    color: Colors.white,
-                    fontSize: 10,
+                    color: isDark ? Colors.white : AppColors.onSurface,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -88,14 +107,14 @@ class DocumentThumbnail extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
               ? [AppColors.darkSurfaceContainerHigh, AppColors.darkSurfaceContainer]
-              : [const Color(0xFFFFFFFF), const Color(0xFFF1F5F9)],
+              : [const Color(0xFFFFFFFF), const Color(0xFFF1F3F5)],
         ),
       ),
       child: Column(
@@ -104,22 +123,22 @@ class DocumentThumbnail extends StatelessWidget {
         children: [
           Icon(
             typeIcon,
-            size: 28,
-            color: iconColor.withValues(alpha: 0.85),
+            size: 24,
+            color: iconColor.withValues(alpha: 0.9),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Container(
-            height: 3,
-            width: 24,
+            height: 2.5,
+            width: 20,
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkOutlineVariant : AppColors.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2.5),
           Container(
-            height: 3,
-            width: 16,
+            height: 2.5,
+            width: 14,
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkOutlineVariant : AppColors.outlineVariant,
               borderRadius: BorderRadius.circular(2),

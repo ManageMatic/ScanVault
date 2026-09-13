@@ -5,7 +5,7 @@ import '../../../../core/constants/app_typography.dart';
 
 enum QuickActionType { scanDoc, importPhotos, importPdf, extractOcr, createPdf }
 
-/// Horizontal Quick Actions row conforming to Stitch design specifications.
+/// Horizontal Quick Actions row matching Stitch specifications (w-28 h-32).
 class QuickActionsGrid extends StatelessWidget {
   final ValueChanged<QuickActionType> onActionSelected;
 
@@ -47,7 +47,7 @@ class QuickActionsGrid extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: [
-              // 1. Primary Scan Card
+              // 1. Primary Scan Card (Stitch: w-28 h-32 bg-primary text-on-primary p-3 rounded-xl)
               _buildActionCard(
                 context: context,
                 isPrimary: true,
@@ -57,7 +57,7 @@ class QuickActionsGrid extends StatelessWidget {
                 onTap: () => onActionSelected(QuickActionType.scanDoc),
               ),
               const SizedBox(width: 10),
-              // 2. Import Photos
+              // 2. Import Images
               _buildActionCard(
                 context: context,
                 isPrimary: false,
@@ -73,7 +73,7 @@ class QuickActionsGrid extends StatelessWidget {
                 context: context,
                 isPrimary: false,
                 icon: Icons.picture_as_pdf_rounded,
-                iconColor: const Color(0xFFF59E0B),
+                iconColor: AppColors.secondary,
                 category: 'Storage',
                 title: 'Import PDF',
                 onTap: () => onActionSelected(QuickActionType.importPdf),
@@ -84,8 +84,8 @@ class QuickActionsGrid extends StatelessWidget {
                 context: context,
                 isPrimary: false,
                 icon: Icons.text_fields_rounded,
-                iconColor: const Color(0xFF008378),
-                category: 'On-Device',
+                iconColor: AppColors.tertiary,
+                category: 'AI Vision',
                 title: 'Extract OCR',
                 onTap: () => onActionSelected(QuickActionType.extractOcr),
               ),
@@ -132,8 +132,8 @@ class QuickActionsGrid extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppDimens.roundedLg,
         child: Container(
-          width: 108,
-          height: 122,
+          width: 112,
+          height: 128,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: bgColor,
@@ -146,8 +146,8 @@ class QuickActionsGrid extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: isPrimary
                       ? Colors.white.withValues(alpha: 0.18)
@@ -169,8 +169,8 @@ class QuickActionsGrid extends StatelessWidget {
                       color: isPrimary
                           ? AppColors.primaryFixed
                           : Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -179,7 +179,8 @@ class QuickActionsGrid extends StatelessWidget {
                     style: AppTypography.titleSmall.copyWith(
                       color: isPrimary ? Colors.white : Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: 13.5,
+                      height: 1.15,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
