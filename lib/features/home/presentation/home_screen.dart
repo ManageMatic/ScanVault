@@ -11,19 +11,25 @@ import 'widgets/quick_actions_grid.dart';
 import 'widgets/privacy_banner.dart';
 import 'widgets/recent_documents_section.dart';
 
+import '../../auth/domain/auth_controller.dart';
+
 /// Primary Home Dashboard Screen adhering to Google Stitch specifications.
 class HomeScreen extends StatefulWidget {
   final HomeController controller;
+  final AuthController? authController;
   final VoidCallback onNavigateToDocuments;
   final VoidCallback onOpenScanner;
   final VoidCallback onOpenTools;
+  final VoidCallback? onOpenAccount;
 
   const HomeScreen({
     super.key,
     required this.controller,
+    this.authController,
     required this.onNavigateToDocuments,
     required this.onOpenScanner,
     required this.onOpenTools,
+    this.onOpenAccount,
   });
 
   @override
@@ -136,16 +142,18 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: widget.onNavigateToDocuments,
           ),
           IconButton(
-            icon: const Icon(Icons.shield_outlined),
-            tooltip: 'Privacy Vault Status',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ScanVault is 100% offline. Zero remote network requests.'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+            icon: Icon(
+              widget.authController?.isAuthenticated == true
+                  ? Icons.account_circle_rounded
+                  : Icons.account_circle_outlined,
+              color: widget.authController?.isAuthenticated == true
+                  ? AppColors.primary
+                  : null,
+            ),
+            tooltip: widget.authController?.isAuthenticated == true
+                ? 'Account Profile (${widget.authController?.currentUser?.email})'
+                : 'Account & Sign In',
+            onPressed: widget.onOpenAccount,
           ),
           const SizedBox(width: 4),
         ],

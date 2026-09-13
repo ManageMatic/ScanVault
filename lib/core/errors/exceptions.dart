@@ -24,3 +24,11 @@ class PdfException extends AppException {
 class OcrException extends AppException {
   const OcrException(super.message, [super.cause]);
 }
+
+class AuthException extends AppException {
+  const AuthException(super.message, [super.cause]);
+}
+
+class ServerException extends AppException {
+  const ServerException(super.message, [super.cause]);
+}

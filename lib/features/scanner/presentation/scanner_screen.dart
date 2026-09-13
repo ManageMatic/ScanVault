@@ -1,17 +1,23 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/models/scan_session.dart';
 import '../domain/scanner_controller.dart';
+import 'crop_screen.dart';
+import 'session_review_screen.dart';
 import 'widgets/camera_controls.dart';
 import 'widgets/camera_viewfinder_overlay.dart';
 
-/// Camera Scanner Screen conforming to Stitch camera UI specifications.
+/// Production Camera Scanner Screen conforming to Stitch camera UI specifications.
 class ScannerScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final String userId;
 
   const ScannerScreen({
     super.key,
     this.onBack,
+    this.userId = 'local_user',
   });
 
   @override
@@ -25,6 +31,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void initState() {
     super.initState();
     _controller.addListener(_onStateChanged);
+    _controller.initialize();
   }
 
   @override
@@ -39,29 +46,55 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   void _handleCapture() async {
-    await _controller.simulateCapture();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Page ${_controller.pageCount} captured • Ready for review'),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final page = await _controller.capture();
+    if (!mounted || page == null) return;
+
+    if (_controller.mode == ScanMode.single) {
+      // Direct to Crop / Review
+      final cropped = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CropScreen(page: page),
+        ),
+      );
+      if (cropped != null) {
+        _controller.updatePage(cropped);
+      }
+      _openReview();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Page ${_controller.pageCount} captured • Ready for review'),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _finishBatch() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_controller.pageCount} pages saved to Vault'),
-        behavior: SnackBarBehavior.floating,
+  void _handleGalleryImport() async {
+    final imported = await _controller.importFromGallery();
+    if (imported.isNotEmpty && mounted) {
+      _openReview();
+    }
+  }
+
+  void _openReview() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SessionReviewScreen(
+          scannerController: _controller,
+          userId: widget.userId,
+          onSaved: () {
+            Navigator.of(context).pop(); // pop review screen
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.of(context).pop(); // pop scanner
+            }
+          },
+        ),
       ),
     );
-    if (widget.onBack != null) {
-      widget.onBack!();
-    } else {
-      Navigator.of(context).pop();
-    }
   }
 
   @override
@@ -71,19 +104,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Viewfinder Background Simulator
-          Container(
-            color: const Color(0xFF14191E),
-            child: Center(
-              child: Icon(
-                Icons.document_scanner_rounded,
-                size: 80,
-                color: Colors.white.withValues(alpha: 0.06),
+          // Real Camera Viewfinder or Fallback
+          if (_controller.isInitialized && _controller.cameraController != null)
+            Center(
+              child: CameraPreview(_controller.cameraController!),
+            )
+          else
+            Container(
+              color: const Color(0xFF14191E),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.document_scanner_rounded,
+                      size: 80,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _controller.hasPermission
+                          ? 'Starting Camera Feed...'
+                          : 'Camera permission required to scan',
+                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Viewfinder Overlays & Brackets
+          // Viewfinder Overlays & Document Alignment Brackets
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 60),
@@ -112,7 +162,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       },
                     ),
 
-                    // Auto Capture Toggle Pill
+                    // Auto / Manual Capture Pill
                     GestureDetector(
                       onTap: _controller.toggleAutoCapture,
                       child: Container(
@@ -141,7 +191,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       ),
                     ),
 
-                    // Flash Toggle & Camera Switch
+                    // Flash Toggle & Camera Flip
                     Row(
                       children: [
                         IconButton(
@@ -170,15 +220,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
               currentMode: _controller.mode,
               onModeChanged: _controller.setMode,
               onCapture: _handleCapture,
-              onGalleryImport: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Gallery photo import ready.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              onFinishBatch: _finishBatch,
+              onGalleryImport: _handleGalleryImport,
+              onFinishBatch: _openReview,
               pageCount: _controller.pageCount,
               isCapturing: _controller.isCapturing,
             ),

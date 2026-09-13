@@ -6,13 +6,19 @@ import '../../../core/widgets/toggle_tile.dart';
 import '../domain/settings_controller.dart';
 import 'about_screen.dart';
 
+import '../../auth/domain/auth_controller.dart';
+
 /// Settings & Privacy Security screen conforming strictly to Stitch design specs.
 class SettingsScreen extends StatefulWidget {
   final SettingsController controller;
+  final AuthController? authController;
+  final VoidCallback? onOpenAccount;
 
   const SettingsScreen({
     super.key,
     required this.controller,
+    this.authController,
+    this.onOpenAccount,
   });
 
   @override
@@ -275,6 +281,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+            // SECTION 0: ACCOUNT & USER IDENTITY
+            _buildSectionHeader(
+              icon: Icons.account_circle_rounded,
+              title: 'ACCOUNT & USER PROFILE',
+            ),
+            _buildCardGroup([
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: widget.authController?.isAuthenticated == true
+                        ? AppColors.primaryContainer.withValues(alpha: 0.15)
+                        : (isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainerHigh),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.authController?.isAuthenticated == true
+                        ? Icons.person_rounded
+                        : Icons.person_outline_rounded,
+                    color: widget.authController?.isAuthenticated == true
+                        ? AppColors.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                title: Text(
+                  widget.authController?.isAuthenticated == true
+                      ? (widget.authController?.currentUser?.name ?? widget.authController?.currentUser?.email ?? 'User')
+                      : 'Offline Guest Vault',
+                  style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  widget.authController?.isAuthenticated == true
+                      ? widget.authController!.currentUser!.email
+                      : 'Sandboxed local storage • Sign in to sync',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                trailing: FilledButton.tonal(
+                  onPressed: widget.onOpenAccount,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: Text(
+                    widget.authController?.isAuthenticated == true ? 'Manage' : 'Sign In',
+                    style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ]),
             const SizedBox(height: 18),
 
             // SECTION 1: SECURITY & ACCESS

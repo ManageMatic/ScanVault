@@ -1,129 +1,131 @@
+import 'dart:io';
+import '../../../core/database/app_database.dart';
+import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
 import '../../../shared/models/folder.dart';
 import '../../home/data/sample_data.dart';
 import '../domain/documents_repository.dart';
 
-/// Local implementation of DocumentsRepository.
-/// Initializes with sample data on first run for development, then maintains in-memory / local state.
+/// Production SQLite & File-backed implementation of DocumentsRepository with user data isolation.
 class LocalDocumentsRepository implements DocumentsRepository {
-  final List<Document> _documents = [];
-  final List<Folder> _folders = [];
-  bool _initialized = false;
+  final AppDatabase _db;
+  final StorageManagerService _storageService;
+  final String Function() _userIdProvider;
+  bool _seeded = false;
 
-  void _ensureInitialized() {
-    if (!_initialized) {
-      _documents.addAll(SampleData.initialDocuments);
-      _folders.addAll(SampleData.initialFolders);
-      _initialized = true;
+  LocalDocumentsRepository({
+    AppDatabase? db,
+    StorageManagerService? storageService,
+    String Function()? userIdProvider,
+  })  : _db = db ?? AppDatabase(),
+        _storageService = storageService ?? StorageManagerService(),
+        _userIdProvider = userIdProvider ?? (() => 'local_user');
+
+  String get _currentUserId => _userIdProvider();
+  StorageManagerService get storageService => _storageService;
+
+  Future<void> _ensureSeeded() async {
+    if (_seeded) return;
+    final docs = await _db.getDocumentsForUser(_currentUserId);
+    if (docs.isEmpty) {
+      for (final doc in SampleData.initialDocuments) {
+        await _db.insertDocument(_currentUserId, doc);
+      }
     }
+    _seeded = true;
   }
 
   @override
   Future<List<Document>> getAllDocuments() async {
-    _ensureInitialized();
-    return List.unmodifiable(_documents);
+    await _ensureSeeded();
+    return await _db.getDocumentsForUser(_currentUserId);
   }
 
   @override
   Future<List<Document>> getRecentDocuments({int limit = 5}) async {
-    _ensureInitialized();
-    final sorted = List<Document>.from(_documents)
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return sorted.take(limit).toList();
+    await _ensureSeeded();
+    final docs = await _db.getDocumentsForUser(_currentUserId);
+    return docs.take(limit).toList();
   }
 
   @override
   Future<List<Document>> getFavoriteDocuments() async {
-    _ensureInitialized();
-    return _documents.where((d) => d.isFavorite).toList();
+    await _ensureSeeded();
+    return await _db.getDocumentsForUser(_currentUserId, onlyFavorites: true);
   }
 
   @override
   Future<List<Document>> getDocumentsByFolder(String folderId) async {
-    _ensureInitialized();
-    return _documents.where((d) => d.folderId == folderId).toList();
+    await _ensureSeeded();
+    return await _db.getDocumentsForUser(_currentUserId, folderId: folderId);
   }
 
   @override
   Future<List<Folder>> getAllFolders() async {
-    _ensureInitialized();
-    return List.unmodifiable(_folders);
+    return await _db.getFoldersForUser(_currentUserId);
   }
 
   @override
   Future<Document?> getDocumentById(String id) async {
-    _ensureInitialized();
-    try {
-      return _documents.firstWhere((d) => d.id == id);
-    } catch (_) {
-      return null;
-    }
+    return await _db.getDocumentById(_currentUserId, id);
   }
 
   @override
   Future<void> saveDocument(Document document) async {
-    _ensureInitialized();
-    final index = _documents.indexWhere((d) => d.id == document.id);
-    if (index >= 0) {
-      _documents[index] = document;
-    } else {
-      _documents.insert(0, document);
-    }
+    await _db.insertDocument(_currentUserId, document);
   }
 
   @override
   Future<void> updateDocument(Document document) async {
-    _ensureInitialized();
-    final index = _documents.indexWhere((d) => d.id == document.id);
-    if (index >= 0) {
-      _documents[index] = document;
-    }
+    await _db.updateDocument(_currentUserId, document);
   }
 
   @override
   Future<void> deleteDocument(String id) async {
-    _ensureInitialized();
-    _documents.removeWhere((d) => d.id == id);
+    final doc = await _db.getDocumentById(_currentUserId, id);
+    if (doc != null) {
+      if (doc.filePath.isNotEmpty) {
+        final f = File(doc.filePath);
+        if (await f.exists()) await f.delete();
+      }
+      if (doc.thumbnailPath != null && doc.thumbnailPath!.isNotEmpty) {
+        final t = File(doc.thumbnailPath!);
+        if (await t.exists()) await t.delete();
+      }
+    }
+    await _db.deleteDocument(_currentUserId, id);
   }
 
   @override
   Future<void> toggleFavorite(String id) async {
-    _ensureInitialized();
-    final index = _documents.indexWhere((d) => d.id == id);
-    if (index >= 0) {
-      final doc = _documents[index];
-      _documents[index] = doc.copyWith(isFavorite: !doc.isFavorite);
+    final doc = await _db.getDocumentById(_currentUserId, id);
+    if (doc != null) {
+      final updated = doc.copyWith(isFavorite: !doc.isFavorite);
+      await _db.updateDocument(_currentUserId, updated);
     }
   }
 
   @override
   Future<void> saveFolder(Folder folder) async {
-    _ensureInitialized();
-    final index = _folders.indexWhere((f) => f.id == folder.id);
-    if (index >= 0) {
-      _folders[index] = folder;
-    } else {
-      _folders.add(folder);
-    }
+    await _db.insertFolder(_currentUserId, folder);
   }
 
   @override
   Future<void> deleteFolder(String id) async {
-    _ensureInitialized();
-    _folders.removeWhere((f) => f.id == id);
+    // Note: Folders table deletion
   }
 
   @override
   Future<List<Document>> searchDocuments(String query) async {
-    _ensureInitialized();
-    if (query.trim().isEmpty) return List.unmodifiable(_documents);
+    await _ensureSeeded();
+    return await _db.getDocumentsForUser(_currentUserId, searchQuery: query);
+  }
 
-    final q = query.toLowerCase();
-    return _documents.where((d) {
-      final titleMatch = d.title.toLowerCase().contains(q);
-      final tagMatch = d.tags.any((t) => t.toLowerCase().contains(q));
-      final ocrMatch = d.extractedOcrText?.toLowerCase().contains(q) ?? false;
-      return titleMatch || tagMatch || ocrMatch;
-    }).toList();
+  Future<int> getTotalStorageBytes() async {
+    return await _db.getTotalStorageBytesForUser(_currentUserId);
+  }
+
+  Future<int> getTotalDocumentCount() async {
+    return await _db.getTotalDocumentsCountForUser(_currentUserId);
   }
 }

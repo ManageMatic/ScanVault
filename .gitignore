@@ -49,3 +49,6 @@ app.*.map.json
 
 # Local Design System Assets
 stitch_scanvault_android_ui_ux_system/
+
+# Environment secrets
+.env
