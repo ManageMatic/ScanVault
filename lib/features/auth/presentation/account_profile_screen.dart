@@ -40,7 +40,10 @@ class AccountProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Account & Profile',
-          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -73,7 +76,10 @@ class AccountProfileScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     user?.name ?? 'Vault User',
-                    style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+                    style: AppTypography.titleLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(

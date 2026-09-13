@@ -44,7 +44,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(
         title: Text(
           'Reset Password',
-          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ),
       body: SafeArea(
@@ -67,7 +70,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'Check Your Email',
-                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+                        style: AppTypography.titleLarge.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
