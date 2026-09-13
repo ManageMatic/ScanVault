@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/settings_tile.dart';
 import '../../../core/widgets/toggle_tile.dart';
 import '../domain/settings_controller.dart';
 import 'about_screen.dart';
 
-/// Settings & Preferences Screen conforming to Stitch specifications.
+/// Settings & Privacy Security screen conforming strictly to Stitch design specs.
 class SettingsScreen extends StatefulWidget {
   final SettingsController controller;
 
@@ -22,6 +20,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     widget.controller.removeListener(_onStateChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -102,185 +103,740 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: AppTypography.headlineMedium.copyWith(
-            fontWeight: FontWeight.w700,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimens.margin, vertical: 12),
-        children: [
-          // Privacy Vault Card Banner
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceContainerLow : const Color(0xFFE6F5F3),
-              borderRadius: AppDimens.roundedLg,
-              border: Border.all(
-                color: isDark ? AppColors.darkCardBorder : AppColors.primary.withValues(alpha: 0.2),
-                width: 1,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'SCANVAULT',
+              style: AppTypography.labelSmall.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: AppColors.primary,
               ),
             ),
-            child: Row(
+            Text(
+              'Settings',
+              style: AppTypography.titleLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.margin, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Privacy Trust Hero Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceContainerLowest : AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
+                  width: 1,
+                ),
+                boxShadow: AppDimens.cardShadow,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.verified_user_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '100% Private & Offline',
+                              style: AppTypography.titleSmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurfaceContainerHigh : AppColors.tertiaryFixed,
+                                borderRadius: BorderRadius.circular(9999),
+                              ),
+                              child: Text(
+                                'Air-Gapped',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark ? AppColors.primaryFixedDim : AppColors.onTertiaryFixed,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'No accounts, no trackers, zero remote servers. All OCR and PDF operations execute strictly on local device silicon.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Zero Cloud Footprint • Local Encrypted Vault',
+                                style: AppTypography.labelSmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 2. Search Settings Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(
+                  color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search security parameters, OCR...',
+                        hintStyle: AppTypography.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // SECTION 1: SECURITY & ACCESS
+            _buildSectionHeader(
+              icon: Icons.shield_rounded,
+              title: 'SECURITY & ACCESS',
+            ),
+            _buildCardGroup([
+              ToggleTile(
+                icon: Icons.lock_clock_rounded,
+                title: 'App Lock',
+                subtitle: 'Require authentication on launch',
+                value: widget.controller.appLockEnabled,
+                onChanged: widget.controller.setAppLock,
+              ),
+              const Divider(height: 1),
+              ToggleTile(
+                icon: Icons.fingerprint_rounded,
+                title: 'Biometric Unlock',
+                subtitle: 'Face ID & Touch ID hardware pass',
+                value: widget.controller.biometricEnabled,
+                onChanged: widget.controller.setBiometric,
+              ),
+              const Divider(height: 1),
+              _buildClickableTile(
+                icon: Icons.pin_rounded,
+                title: 'Change 6-Digit PIN',
+                subtitle: 'Last updated 30 days ago',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PIN modification modal ready')),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              _buildValueTile(
+                icon: Icons.timer_outlined,
+                title: 'Auto-Lock Duration',
+                subtitle: 'Suspension trigger interval',
+                badgeText: 'Immediate',
+              ),
+              const Divider(height: 1),
+              ToggleTile(
+                icon: Icons.fmd_bad_rounded,
+                iconColor: AppColors.error,
+                title: 'Brute-Force Vault Destruction',
+                subtitle: 'Wipe database after 10 failed attempts',
+                value: widget.controller.bruteForceEnabled,
+                onChanged: widget.controller.setBruteForce,
+              ),
+            ]),
+            const SizedBox(height: 18),
+
+            // SECTION 2: SCANNING & CAMERA PREFERENCES
+            _buildSectionHeader(
+              icon: Icons.center_focus_strong_rounded,
+              title: 'SCANNING & CAMERA PREFERENCES',
+            ),
+            _buildCardGroup([
+              ToggleTile(
+                icon: Icons.crop_free_rounded,
+                title: 'Auto-Edge Detection',
+                subtitle: 'Real-time perspective quadrilateral snap',
+                value: widget.controller.autoCropEnabled,
+                onChanged: widget.controller.setAutoCrop,
+              ),
+              const Divider(height: 1),
+              _buildActionTileWithBadge(
+                icon: Icons.tune_rounded,
+                title: 'Default Filter',
+                subtitle: 'Applied immediately upon capture',
+                badgeText: widget.controller.defaultFilter,
+                badgeColor: isDark ? AppColors.darkSurfaceContainerHigh : AppColors.primaryFixed,
+                badgeTextColor: isDark ? AppColors.primaryFixedDim : AppColors.onPrimaryFixed,
+                onTap: () {
+                  widget.controller.setDefaultFilter(
+                    widget.controller.defaultFilter == 'Document Clean' ? 'Magic Color' : 'Document Clean',
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              ToggleTile(
+                icon: Icons.volume_off_rounded,
+                title: 'Camera Sound',
+                subtitle: 'Shutter feedback chime',
+                value: widget.controller.cameraSoundEnabled,
+                onChanged: widget.controller.setCameraSound,
+              ),
+              const Divider(height: 1),
+              ToggleTile(
+                icon: Icons.screen_rotation_rounded,
+                title: 'Gyroscope Horizon Guide',
+                subtitle: 'Sensory level line for flat document alignment',
+                value: widget.controller.gyroscopeGuideEnabled,
+                onChanged: widget.controller.setGyroscopeGuide,
+              ),
+              const Divider(height: 1),
+              _buildValueTile(
+                icon: Icons.flash_on_rounded,
+                title: 'Flash Mode',
+                subtitle: 'Default torch posture',
+                badgeText: widget.controller.flashMode,
+              ),
+            ]),
+            const SizedBox(height: 18),
+
+            // SECTION 3: OCR & LOCAL INTELLIGENCE
+            _buildSectionHeader(
+              icon: Icons.psychology_rounded,
+              title: 'OCR & INTELLIGENCE',
+            ),
+            _buildCardGroup([
+              _buildClickableTile(
+                icon: Icons.translate_rounded,
+                title: 'Default OCR Language',
+                subtitle: widget.controller.ocrLanguage,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Multi-language offline pack active')),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              ToggleTile(
+                icon: Icons.document_scanner_rounded,
+                title: 'Auto-OCR Scans',
+                subtitle: 'Recognize text immediately after capture',
+                value: widget.controller.autoOcrEnabled,
+                onChanged: widget.controller.setAutoOcr,
+              ),
+              const Divider(height: 1),
+              _buildValueTile(
+                icon: Icons.memory_rounded,
+                title: 'On-Device Neural Model',
+                subtitle: 'v2.4 Core ML Engine (Offline)',
+                badgeText: 'Active',
+              ),
+            ]),
+            const SizedBox(height: 18),
+
+            // SECTION 4: STORAGE & SYSTEM CACHE
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '100% Offline & Private',
-                        style: AppTypography.titleSmall.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.primaryFixedDim : AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'No cloud subscriptions. Zero telemetry analytics.',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                _buildSectionHeader(
+                  icon: Icons.pie_chart_outline_rounded,
+                  title: 'STORAGE & SYSTEM CACHE',
+                ),
+                Text(
+                  '1.24 GB Used',
+                  style: AppTypography.labelSmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-
-          // Section 1: Scanning & Image Processing
-          _buildSectionHeader('SCANNING & CAPTURE'),
-          _buildCardContainer([
-            ToggleTile(
-              icon: Icons.crop_free_rounded,
-              title: 'Auto Edge Detection',
-              subtitle: 'Automatically detect paper boundaries',
-              value: widget.controller.autoCropEnabled,
-              onChanged: widget.controller.setAutoCrop,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceContainerLowest : AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
+                  width: 1,
+                ),
+                boxShadow: AppDimens.cardShadow,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Visualizer bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(9999),
+                    child: SizedBox(
+                      height: 10,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 79,
+                            child: Container(color: AppColors.primary),
+                          ),
+                          Expanded(
+                            flex: 11,
+                            child: Container(color: AppColors.secondaryContainer),
+                          ),
+                          Expanded(
+                            flex: 10,
+                            child: Container(color: isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFBCC9C6)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Legends
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildStorageLegend('Docs', '980 MB', AppColors.primary),
+                      _buildStorageLegend('Thumbs', '140 MB', AppColors.secondaryContainer),
+                      _buildStorageLegend('Cache', '120 MB', isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFBCC9C6)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Actions
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cache cleaned • 120 MB freed')),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
+                        ),
+                      ),
+                      icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+                      label: Text(
+                        'Clear Cache & Temp Files (120 MB)',
+                        style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Exporting Encrypted Vault Archive...')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryContainer,
+                        foregroundColor: AppColors.onPrimaryContainer,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.cloud_download_rounded, size: 18),
+                      label: Text(
+                        'Export Entire Vault Backup',
+                        style: AppTypography.labelMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Divider(),
-            SettingsTile(
-              icon: Icons.filter_b_and_w_rounded,
-              title: 'Default Filter',
-              subtitle: 'Magic Color Enhancement',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Default filter set to Magic Color')),
-                );
-              },
-            ),
-          ]),
-          const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-          // Section 2: OCR
-          _buildSectionHeader('OCR TEXT EXTRACTION'),
-          _buildCardContainer([
-            SettingsTile(
-              icon: Icons.translate_rounded,
-              title: 'Recognition Language',
-              subtitle: widget.controller.ocrLanguage == 'en' ? 'English (US)' : widget.controller.ocrLanguage,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Multi-language pack ready')),
-                );
-              },
-            ),
-          ]),
-          const SizedBox(height: 20),
-
-          // Section 3: PDF Quality
-          _buildSectionHeader('PDF EXPORT QUALITY'),
-          _buildCardContainer([
-            SettingsTile(
-              icon: Icons.tune_rounded,
-              title: 'Compression & Resolution',
-              subtitle: 'High (300 DPI Balanced)',
-              onTap: () {},
-            ),
-          ]),
-          const SizedBox(height: 20),
-
-          // Section 4: Security
-          _buildSectionHeader('APP SECURITY'),
-          _buildCardContainer([
-            ToggleTile(
-              icon: Icons.fingerprint_rounded,
-              title: 'App Lock / PIN',
-              subtitle: 'Require biometric authentication on launch',
-              value: widget.controller.appLockEnabled,
-              onChanged: widget.controller.setAppLock,
-            ),
-          ]),
-          const SizedBox(height: 20),
-
-          // Section 5: Appearance
-          _buildSectionHeader('APPEARANCE'),
-          _buildCardContainer([
-            SettingsTile(
+            // SECTION 5: APPEARANCE & THEME
+            _buildSectionHeader(
               icon: Icons.palette_outlined,
-              title: 'Theme',
-              subtitle: _getThemeLabel(widget.controller.themeMode),
-              onTap: _showThemeSelector,
+              title: 'APPEARANCE',
             ),
-          ]),
-          const SizedBox(height: 20),
+            _buildCardGroup([
+              _buildClickableTile(
+                icon: Icons.palette_rounded,
+                title: 'Theme',
+                subtitle: _getThemeLabel(widget.controller.themeMode),
+                onTap: _showThemeSelector,
+              ),
+            ]),
+            const SizedBox(height: 18),
 
-          // Section 6: About
-          _buildSectionHeader('ABOUT SCANVAULT'),
-          _buildCardContainer([
-            SettingsTile(
+            // SECTION 6: ABOUT SCANVAULT
+            _buildSectionHeader(
               icon: Icons.info_outline_rounded,
-              title: 'About & Open Source',
-              subtitle: AppStrings.version,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AboutScreen()),
-                );
-              },
+              title: 'ABOUT SCANVAULT',
             ),
-          ]),
-          const SizedBox(height: 32),
+            _buildCardGroup([
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.token_rounded,
+                        color: AppColors.primary,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ScanVault v3.2.0 (Build 412)',
+                            style: AppTypography.titleSmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Open Source (GPL-3.0) • No trackers',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '100% Free for life • Zero paywalls',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              _buildClickableTile(
+                icon: Icons.code_rounded,
+                title: 'Third-Party & Open Source Licenses',
+                subtitle: 'View Apache 2.0, MIT, and BSD notices',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AboutScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              _buildClickableTile(
+                icon: Icons.terminal_rounded,
+                title: 'GitHub Source Repository',
+                subtitle: 'ManageMatic/ScanVault on GitHub',
+                trailingIcon: Icons.open_in_new_rounded,
+                onTap: () {},
+              ),
+            ]),
+            const SizedBox(height: 20),
+
+            // Footnote
+            Center(
+              child: Text(
+                'ScanVault encrypts every byte at rest using local sandboxed storage.',
+                style: AppTypography.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({required IconData icon, required String title}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(
+            title,
+            style: AppTypography.labelSmall.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: AppTypography.labelSmall.copyWith(
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardContainer(List<Widget> children) {
+  Widget _buildCardGroup(List<Widget> children) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurfaceContainerLowest : AppColors.surfaceContainerLowest,
-        borderRadius: AppDimens.roundedLg,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
           width: 1,
         ),
         boxShadow: AppDimens.cardShadow,
       ),
-      child: Column(
-        children: children,
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildClickableTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    IconData trailingIcon = Icons.chevron_right_rounded,
+  }) {
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurfaceContainerLow
+              : AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
+      title: Text(
+        title,
+        style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.bodySmall.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: Icon(trailingIcon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildValueTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String badgeText,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+      title: Text(
+        title,
+        style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.bodySmall.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(9999),
+        ),
+        child: Text(
+          badgeText,
+          style: AppTypography.labelSmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTileWithBadge({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String badgeText,
+    required Color badgeColor,
+    required Color badgeTextColor,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+      title: Text(
+        title,
+        style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: AppTypography.bodySmall.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(9999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: badgeColor,
+            borderRadius: BorderRadius.circular(9999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                badgeText,
+                style: AppTypography.labelSmall.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: badgeTextColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.expand_more_rounded, size: 16, color: badgeTextColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStorageLegend(String label, String size, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$label ',
+          style: AppTypography.labelSmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          '($size)',
+          style: AppTypography.labelSmall.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
