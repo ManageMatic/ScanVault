@@ -6,7 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../image_processing/domain/image_processor.dart';
 import '../domain/scanned_page_item.dart';
 
-/// Document Enhancement and Color Filter screen conforming to Stitch specifications.
+/// Document Enhancement, Shadow Removal, and Color Filter screen conforming to Stitch specifications.
 class EnhancementScreen extends StatefulWidget {
   final ScannedPageItem page;
 
@@ -23,10 +23,12 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
   late ScanFilterMode _selectedFilter;
   late double _brightness;
   late double _contrast;
+  late double _shadowRemoval;
   late int _rotationDegrees;
   Uint8List? _rawBytes;
   Uint8List? _previewBytes;
   bool _isLoading = true;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -34,13 +36,14 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
     _selectedFilter = widget.page.enhancementParams.filterMode;
     _brightness = widget.page.enhancementParams.brightness;
     _contrast = widget.page.enhancementParams.contrast;
+    _shadowRemoval = widget.page.enhancementParams.shadowRemoval;
     _rotationDegrees = widget.page.enhancementParams.rotationDegrees;
     _loadAndProcess();
   }
 
   Future<void> _loadAndProcess() async {
     try {
-      if (widget.page.cachedProcessedBytes != null) {
+      if (widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
         _rawBytes = widget.page.cachedProcessedBytes;
       } else {
         final f = File(widget.page.originalImagePath);
@@ -60,18 +63,34 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
   void _updatePreview() {
     if (_rawBytes == null) return;
+    _isProcessing = true;
     final processed = ImageProcessor.processImageSync(
       rawBytes: _rawBytes!,
       params: ImageEnhancementParams(
         filterMode: _selectedFilter,
         brightness: _brightness,
         contrast: _contrast,
+        shadowRemoval: _shadowRemoval,
         rotationDegrees: _rotationDegrees,
       ),
+      customMaxDimension: 900, // Fast preview resolution
     );
     if (mounted) {
-      setState(() => _previewBytes = processed);
+      setState(() {
+        _previewBytes = processed;
+        _isProcessing = false;
+      });
     }
+  }
+
+  void _resetToDefaults() {
+    setState(() {
+      _selectedFilter = ScanFilterMode.documentClean;
+      _brightness = 0.0;
+      _contrast = 1.0;
+      _shadowRemoval = 0.0;
+    });
+    _updatePreview();
   }
 
   void _saveAndApply() {
@@ -80,14 +99,23 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       return;
     }
 
+    final newParams = ImageEnhancementParams(
+      filterMode: _selectedFilter,
+      brightness: _brightness,
+      contrast: _contrast,
+      shadowRemoval: _shadowRemoval,
+      rotationDegrees: _rotationDegrees,
+    );
+
+    // Apply full-quality processing for the final page state
+    final finalProcessed = ImageProcessor.processImageSync(
+      rawBytes: _rawBytes!,
+      params: newParams,
+    );
+
     final updated = widget.page.copyWith(
-      cachedProcessedBytes: _previewBytes,
-      enhancementParams: ImageEnhancementParams(
-        filterMode: _selectedFilter,
-        brightness: _brightness,
-        contrast: _contrast,
-        rotationDegrees: _rotationDegrees,
-      ),
+      cachedProcessedBytes: finalProcessed,
+      enhancementParams: newParams,
     );
 
     Navigator.of(context).pop(updated);
@@ -106,6 +134,11 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
           style: AppTypography.titleMedium.copyWith(color: Colors.white),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.restart_alt_rounded),
+            tooltip: 'Reset to Default',
+            onPressed: _resetToDefaults,
+          ),
           IconButton(
             icon: const Icon(Icons.rotate_right_rounded),
             tooltip: 'Rotate 90°',
@@ -130,7 +163,8 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
                     child: Center(
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF1A222B),
+                          borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.5),
@@ -143,7 +177,15 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
                         child: _previewBytes != null
                             ? Image.memory(
                                 _previewBytes!,
+                                key: ValueKey('preview_${_selectedFilter}_${_brightness}_${_contrast}_$_shadowRemoval'),
                                 fit: BoxFit.contain,
+                                filterQuality: FilterQuality.medium,
+                                frameBuilder: (context, child, frame, wasSync) {
+                                  if (wasSync || frame != null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                                  );
+                                },
                               )
                             : Container(color: Colors.grey.shade900),
                       ),
@@ -153,56 +195,48 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
                 // Fine Tuning Sliders
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  color: const Color(0xFF161C23),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     children: [
                       // Brightness Slider
-                      Row(
-                        children: [
-                          const Icon(Icons.brightness_6_rounded, color: Colors.white70, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Slider(
-                              value: _brightness,
-                              min: -0.5,
-                              max: 0.5,
-                              activeColor: AppColors.primary,
-                              inactiveColor: Colors.white24,
-                              onChanged: (val) {
-                                setState(() => _brightness = val);
-                                _updatePreview();
-                              },
-                            ),
-                          ),
-                          Text(
-                            '${(_brightness * 100).toInt()}%',
-                            style: AppTypography.labelSmall.copyWith(color: Colors.white70),
-                          ),
-                        ],
+                      _buildSliderRow(
+                        icon: Icons.brightness_6_rounded,
+                        label: 'Brightness',
+                        value: _brightness,
+                        min: -0.5,
+                        max: 0.5,
+                        displayVal: '${(_brightness * 100).toInt()}%',
+                        onChanged: (val) {
+                          setState(() => _brightness = val);
+                          _updatePreview();
+                        },
                       ),
                       // Contrast Slider
-                      Row(
-                        children: [
-                          const Icon(Icons.contrast_rounded, color: Colors.white70, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Slider(
-                              value: _contrast,
-                              min: 0.5,
-                              max: 1.5,
-                              activeColor: AppColors.primary,
-                              inactiveColor: Colors.white24,
-                              onChanged: (val) {
-                                setState(() => _contrast = val);
-                                _updatePreview();
-                              },
-                            ),
-                          ),
-                          Text(
-                            '${(_contrast * 100).toInt()}%',
-                            style: AppTypography.labelSmall.copyWith(color: Colors.white70),
-                          ),
-                        ],
+                      _buildSliderRow(
+                        icon: Icons.contrast_rounded,
+                        label: 'Contrast',
+                        value: _contrast,
+                        min: 0.5,
+                        max: 1.5,
+                        displayVal: '${(_contrast * 100).toInt()}%',
+                        onChanged: (val) {
+                          setState(() => _contrast = val);
+                          _updatePreview();
+                        },
+                      ),
+                      // Shadow Removal Slider
+                      _buildSliderRow(
+                        icon: Icons.wb_sunny_rounded,
+                        label: 'Shadows',
+                        value: _shadowRemoval,
+                        min: 0.0,
+                        max: 1.0,
+                        displayVal: '${(_shadowRemoval * 100).toInt()}%',
+                        onChanged: (val) {
+                          setState(() => _shadowRemoval = val);
+                          _updatePreview();
+                        },
                       ),
                     ],
                   ),
@@ -210,13 +244,15 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
                 // Filter Modes Selector
                 Container(
-                  height: 90,
+                  height: 88,
+                  color: const Color(0xFF131820),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     children: [
                       _buildFilterCard(ScanFilterMode.documentClean, 'Clean', Icons.auto_fix_high_rounded),
+                      _buildFilterCard(ScanFilterMode.auto, 'Auto', Icons.hdr_auto_rounded),
                       _buildFilterCard(ScanFilterMode.magicColor, 'Magic Color', Icons.color_lens_rounded),
                       _buildFilterCard(ScanFilterMode.blackAndWhite, 'B&W Text', Icons.text_snippet_rounded),
                       _buildFilterCard(ScanFilterMode.grayscale, 'Grayscale', Icons.filter_b_and_w_rounded),
@@ -227,9 +263,10 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
                 // Bottom Action Buttons
                 Container(
-                  color: const Color(0xFF14191E),
+                  color: const Color(0xFF101418),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   child: SafeArea(
+                    top: false,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -239,7 +276,7 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
                           label: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: Colors.white70)),
                         ),
                         FilledButton.icon(
-                          onPressed: _saveAndApply,
+                          onPressed: _isProcessing ? null : _saveAndApply,
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -263,6 +300,54 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
     );
   }
 
+  Widget _buildSliderRow({
+    required IconData icon,
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String displayVal,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white70, size: 18),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 68,
+          child: Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(color: Colors.white70, fontSize: 11),
+          ),
+        ),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            ),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              activeColor: AppColors.primary,
+              inactiveColor: Colors.white12,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 38,
+          child: Text(
+            displayVal,
+            textAlign: TextAlign.end,
+            style: AppTypography.labelSmall.copyWith(color: Colors.white70, fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFilterCard(ScanFilterMode mode, String label, IconData icon) {
     final isSelected = _selectedFilter == mode;
     return GestureDetector(
@@ -272,9 +357,9 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       },
       child: Container(
         width: 76,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
@@ -287,9 +372,9 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
             Icon(
               icon,
               size: 22,
-              color: isSelected ? AppColors.primary : Colors.white70,
+              color: isSelected ? AppColors.primaryFixed : Colors.white70,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             Text(
               label,
               style: AppTypography.labelSmall.copyWith(
