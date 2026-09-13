@@ -164,7 +164,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             Text(
                               '100% Private & Offline',
@@ -173,7 +176,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
@@ -211,12 +213,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 14),
                               const SizedBox(width: 6),
-                              Text(
-                                'Zero Cloud Footprint • Local Encrypted Vault',
-                                style: AppTypography.labelSmall.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontSize: 11,
+                              Flexible(
+                                child: Text(
+                                  'Zero Cloud Footprint • Encrypted Vault',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],

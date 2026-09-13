@@ -80,73 +80,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Offline Engine Status Pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceContainerLow : AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(9999),
-                border: Border.all(
-                  color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryContainer,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Offline Engine',
-                        style: AppTypography.labelSmall.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '•',
-                        style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 10),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '100% On-Device',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Zero Telemetry',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 2. Pro Utilities Hero Banner
+            // 1. Pro Utilities Hero Banner
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

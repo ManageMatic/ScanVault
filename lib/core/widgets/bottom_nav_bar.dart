@@ -16,7 +16,8 @@ class NavItem {
   });
 }
 
-/// Custom Stitch-styled Bottom Navigation Bar for ScanVault matching user reference.
+/// Custom Stitch-styled Bottom Navigation Bar for ScanVault
+/// with the center scanner button elevated above the nav bar.
 class ScanVaultBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -63,36 +64,75 @@ class ScanVaultBottomNavBar extends StatelessWidget {
     final bgColor = isDark ? AppColors.darkSurfaceContainerLowest : Colors.white;
     final borderColor = isDark ? AppColors.darkCardBorder : AppColors.cardBorder;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        border: Border(
-          top: BorderSide(color: borderColor, width: 0.8),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 10,
-            offset: Offset(0, -3),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(context, 0),
-              _buildNavItem(context, 1),
-              _buildCenterScanButton(context),
-              _buildNavItem(context, 3),
-              _buildNavItem(context, 4),
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        // Main Navigation Bar Container
+        Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            border: Border(
+              top: BorderSide(color: borderColor, width: 0.8),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 10,
+                offset: Offset(0, -3),
+              ),
             ],
           ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  _buildNavItem(context, 0),
+                  _buildNavItem(context, 1),
+                  // Reserved middle gap for the elevated center button
+                  const Expanded(child: SizedBox()),
+                  _buildNavItem(context, 3),
+                  _buildNavItem(context, 4),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+
+        // Elevated Floating Center Scanner Button (protruding above top edge)
+        Positioned(
+          top: -14,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onScanPressed,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00685F),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00685F).withValues(alpha: 0.38),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const StitchScannerIcon(
+                  size: 27,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -133,40 +173,6 @@ class ScanVaultBottomNavBar extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCenterScanButton(BuildContext context) {
-    return Expanded(
-      child: Center(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onScanPressed,
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00685F),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00685F).withValues(alpha: 0.35),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: const StitchScannerIcon(
-                size: 26,
-                color: Colors.white,
-              ),
             ),
           ),
         ),
