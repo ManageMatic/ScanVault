@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.scanvault.scanvault"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -31,8 +31,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Signing with the debug keys so it installs and runs seamlessly on personal devices.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

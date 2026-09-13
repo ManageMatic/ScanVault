@@ -1,12 +1,16 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/storage/storage_manager_service.dart';
 import '../../../core/widgets/toggle_tile.dart';
+import '../../backup/data/local_backup_repository.dart';
 import '../domain/settings_controller.dart';
-import 'about_screen.dart';
-
 import '../../auth/domain/auth_controller.dart';
+import 'about_screen.dart';
 
 /// Settings & Privacy Security screen conforming strictly to Stitch design specs.
 class SettingsScreen extends StatefulWidget {
@@ -27,11 +31,117 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final StorageManagerService _storageService = StorageManagerService();
+  final LocalBackupRepository _backupRepo = LocalBackupRepository();
+
+  UserStorageMetrics? _metrics;
+  bool _isClearingCache = false;
+  bool _isExportingBackup = false;
+  bool _isRestoringBackup = false;
+
+  String get _currentUserId => widget.authController?.currentUser?.id ?? 'local_user';
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onStateChanged);
+    _loadStorageMetrics();
+  }
+
+  Future<void> _loadStorageMetrics() async {
+    final m = await _storageService.calculateStorageMetrics(_currentUserId);
+    if (mounted) {
+      setState(() {
+        _metrics = m;
+      });
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB'];
+    var i = 0;
+    double d = bytes.toDouble();
+    while (d >= 1024 && i < suffixes.length - 1) {
+      d /= 1024;
+      i++;
+    }
+    return '${d.toStringAsFixed(i == 0 ? 0 : 1)} ${suffixes[i]}';
+  }
+
+  Future<void> _handleClearCache() async {
+    setState(() => _isClearingCache = true);
+    try {
+      final freed = await _storageService.clearCache(_currentUserId);
+      await _loadStorageMetrics();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cache cleaned • ${_formatBytes(freed)} freed')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isClearingCache = false);
+    }
+  }
+
+  Future<void> _handleExportBackup() async {
+    setState(() => _isExportingBackup = true);
+    try {
+      final res = await _backupRepo.exportVaultBackup(_currentUserId);
+      await _loadStorageMetrics();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Backup created (${res.documentCount} documents, ${_formatBytes(res.totalSizeBytes)})')),
+        );
+        await Share.shareXFiles([
+          XFile(res.backupFile.path, name: res.backupFile.uri.pathSegments.last),
+        ], subject: 'ScanVault Vault Backup');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExportingBackup = false);
+    }
+  }
+
+  Future<void> _handleRestoreBackup() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['svault', 'zip'],
+    );
+    if (result == null || result.files.isEmpty || result.files.first.path == null) {
+      return;
+    }
+
+    setState(() => _isRestoringBackup = true);
+    try {
+      final file = File(result.files.first.path!);
+      final res = await _backupRepo.restoreVaultBackup(_currentUserId, file);
+      await _loadStorageMetrics();
+      if (mounted) {
+        if (res.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Vault restored: ${res.documentsRestored} documents, ${res.foldersRestored} folders')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res.errorMessage ?? 'Restore failed')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restore error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRestoringBackup = false);
+    }
   }
 
   @override
@@ -349,57 +459,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ]),
             const SizedBox(height: 18),
 
-            // SECTION 1: SECURITY & ACCESS
-            _buildSectionHeader(
-              icon: Icons.shield_rounded,
-              title: 'SECURITY & ACCESS',
-            ),
-            _buildCardGroup([
-              ToggleTile(
-                icon: Icons.lock_clock_rounded,
-                title: 'App Lock',
-                subtitle: 'Require authentication on launch',
-                value: widget.controller.appLockEnabled,
-                onChanged: widget.controller.setAppLock,
-              ),
-              const Divider(height: 1),
-              ToggleTile(
-                icon: Icons.fingerprint_rounded,
-                title: 'Biometric Unlock',
-                subtitle: 'Face ID & Touch ID hardware pass',
-                value: widget.controller.biometricEnabled,
-                onChanged: widget.controller.setBiometric,
-              ),
-              const Divider(height: 1),
-              _buildClickableTile(
-                icon: Icons.pin_rounded,
-                title: 'Change 6-Digit PIN',
-                subtitle: 'Last updated 30 days ago',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('PIN modification modal ready')),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              _buildValueTile(
-                icon: Icons.timer_outlined,
-                title: 'Auto-Lock Duration',
-                subtitle: 'Suspension trigger interval',
-                badgeText: 'Immediate',
-              ),
-              const Divider(height: 1),
-              ToggleTile(
-                icon: Icons.fmd_bad_rounded,
-                iconColor: AppColors.error,
-                title: 'Brute-Force Vault Destruction',
-                subtitle: 'Wipe database after 10 failed attempts',
-                value: widget.controller.bruteForceEnabled,
-                onChanged: widget.controller.setBruteForce,
-              ),
-            ]),
-            const SizedBox(height: 18),
-
             // SECTION 2: SCANNING & CAMERA PREFERENCES
             _buildSectionHeader(
               icon: Icons.center_focus_strong_rounded,
@@ -491,7 +550,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionHeader(
               icon: Icons.pie_chart_outline_rounded,
               title: 'STORAGE & CACHE',
-              trailingText: '1.24 GB Used',
+              trailingText: _metrics != null ? '${_formatBytes(_metrics!.totalUsedBytes)} Used' : 'Calculating...',
             ),
             Container(
               padding: const EdgeInsets.all(16),
@@ -515,15 +574,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            flex: 79,
+                            flex: (_metrics != null && _metrics!.totalUsedBytes > 0)
+                                ? ((_metrics!.totalDocumentBytes / _metrics!.totalUsedBytes) * 100).round().clamp(1, 100)
+                                : 70,
                             child: Container(color: AppColors.primary),
                           ),
                           Expanded(
-                            flex: 11,
+                            flex: (_metrics != null && _metrics!.totalUsedBytes > 0)
+                                ? ((_metrics!.totalThumbnailBytes / _metrics!.totalUsedBytes) * 100).round().clamp(1, 100)
+                                : 15,
                             child: Container(color: AppColors.secondaryContainer),
                           ),
                           Expanded(
-                            flex: 10,
+                            flex: (_metrics != null && _metrics!.totalUsedBytes > 0)
+                                ? (((_metrics!.totalTempBytes + _metrics!.totalBackupBytes) / _metrics!.totalUsedBytes) * 100).round().clamp(1, 100)
+                                : 15,
                             child: Container(color: isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFBCC9C6)),
                           ),
                         ],
@@ -537,9 +602,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     runSpacing: 6,
                     alignment: WrapAlignment.start,
                     children: [
-                      _buildStorageLegend('Docs', '980 MB', AppColors.primary),
-                      _buildStorageLegend('Thumbs', '140 MB', AppColors.secondaryContainer),
-                      _buildStorageLegend('Cache', '120 MB', isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFBCC9C6)),
+                      _buildStorageLegend('Docs', _formatBytes(_metrics?.totalDocumentBytes ?? 0), AppColors.primary),
+                      _buildStorageLegend('Thumbs', _formatBytes(_metrics?.totalThumbnailBytes ?? 0), AppColors.secondaryContainer),
+                      _buildStorageLegend('Cache/Temp', _formatBytes(_metrics?.totalTempBytes ?? 0), isDark ? AppColors.darkSurfaceContainerHigh : const Color(0xFFBCC9C6)),
+                      if ((_metrics?.totalBackupBytes ?? 0) > 0)
+                        _buildStorageLegend('Backups', _formatBytes(_metrics!.totalBackupBytes), AppColors.tertiary),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -547,11 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cache cleaned • 120 MB freed')),
-                        );
-                      },
+                      onPressed: _isClearingCache ? null : _handleClearCache,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -559,37 +622,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
                         ),
                       ),
-                      icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+                      icon: _isClearingCache
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.cleaning_services_rounded, size: 18),
                       label: Text(
-                        'Clear Cache & Temp Files (120 MB)',
+                        _isClearingCache
+                            ? 'Cleaning Cache...'
+                            : 'Clear Cache & Temp Files (${_formatBytes(_metrics?.totalTempBytes ?? 0)})',
                         style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Exporting Encrypted Vault Archive...')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
-                        foregroundColor: AppColors.onPrimaryContainer,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.cloud_download_rounded, size: 18),
-                      label: Text(
-                        'Export Entire Vault Backup',
-                        style: AppTypography.labelMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isExportingBackup ? null : _handleExportBackup,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryContainer,
+                            foregroundColor: AppColors.onPrimaryContainer,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: _isExportingBackup
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.cloud_download_rounded, size: 18, color: Colors.white),
+                          label: Text(
+                            _isExportingBackup ? 'Exporting...' : 'Export Backup',
+                            style: AppTypography.labelMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isRestoringBackup ? null : _handleRestoreBackup,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: _isRestoringBackup
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.restore_page_rounded, size: 18),
+                          label: Text(
+                            _isRestoringBackup ? 'Restoring...' : 'Restore Backup',
+                            style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

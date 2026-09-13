@@ -6,6 +6,8 @@ class UserStorageMetrics {
   final int totalDocumentBytes;
   final int totalThumbnailBytes;
   final int totalTempBytes;
+  final int totalSignatureBytes;
+  final int totalBackupBytes;
   final int documentCount;
   final int largestDocumentBytes;
 
@@ -13,14 +15,21 @@ class UserStorageMetrics {
     required this.totalDocumentBytes,
     required this.totalThumbnailBytes,
     required this.totalTempBytes,
+    this.totalSignatureBytes = 0,
+    this.totalBackupBytes = 0,
     required this.documentCount,
     required this.largestDocumentBytes,
   });
 
-  int get totalUsedBytes => totalDocumentBytes + totalThumbnailBytes + totalTempBytes;
+  int get totalUsedBytes =>
+      totalDocumentBytes +
+      totalThumbnailBytes +
+      totalTempBytes +
+      totalSignatureBytes +
+      totalBackupBytes;
 }
 
-/// Service managing user-isolated filesystem paths, files, and disk metrics.
+/// Service managing user-isolated filesystem paths, files, disk metrics, and cleanup.
 class StorageManagerService {
   Future<Directory> getAppRootDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
@@ -67,6 +76,24 @@ class StorageManagerService {
     return tempDir;
   }
 
+  Future<Directory> getUserSignaturesDirectory(String userId) async {
+    final userDir = await getUserDirectory(userId);
+    final sigDir = Directory(p.join(userDir.path, 'signatures'));
+    if (!await sigDir.exists()) {
+      await sigDir.create(recursive: true);
+    }
+    return sigDir;
+  }
+
+  Future<Directory> getUserBackupsDirectory(String userId) async {
+    final userDir = await getUserDirectory(userId);
+    final backupDir = Directory(p.join(userDir.path, 'backups'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir;
+  }
+
   Future<Directory> getDocumentDirectory(String userId, String documentId) async {
     final docsDir = await getUserDocumentsDirectory(userId);
     final docDir = Directory(p.join(docsDir.path, documentId));
@@ -105,10 +132,30 @@ class StorageManagerService {
     return bytesFreed;
   }
 
+  Future<int> clearCache(String userId) async {
+    var freed = await cleanupTempDirectory(userId);
+    // Cleanup any orphaned temp export files in root
+    try {
+      final appDir = await getAppRootDirectory();
+      final tempExports = Directory(p.join(appDir.path, 'temp_exports'));
+      if (await tempExports.exists()) {
+        await for (final entity in tempExports.list(recursive: true, followLinks: false)) {
+          if (entity is File) {
+            freed += await entity.length();
+            await entity.delete();
+          }
+        }
+      }
+    } catch (_) {}
+    return freed;
+  }
+
   Future<UserStorageMetrics> calculateStorageMetrics(String userId) async {
     var docBytes = 0;
     var thumbBytes = 0;
     var tempBytes = 0;
+    var sigBytes = 0;
+    var backupBytes = 0;
     var count = 0;
     var largestBytes = 0;
 
@@ -144,10 +191,30 @@ class StorageManagerService {
       }
     }
 
+    final sigDir = await getUserSignaturesDirectory(userId);
+    if (await sigDir.exists()) {
+      await for (final entity in sigDir.list(recursive: true, followLinks: false)) {
+        if (entity is File) {
+          sigBytes += await entity.length();
+        }
+      }
+    }
+
+    final backupDir = await getUserBackupsDirectory(userId);
+    if (await backupDir.exists()) {
+      await for (final entity in backupDir.list(recursive: true, followLinks: false)) {
+        if (entity is File) {
+          backupBytes += await entity.length();
+        }
+      }
+    }
+
     return UserStorageMetrics(
       totalDocumentBytes: docBytes,
       totalThumbnailBytes: thumbBytes,
       totalTempBytes: tempBytes,
+      totalSignatureBytes: sigBytes,
+      totalBackupBytes: backupBytes,
       documentCount: count,
       largestDocumentBytes: largestBytes,
     );

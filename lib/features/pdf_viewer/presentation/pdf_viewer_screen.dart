@@ -6,8 +6,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/document.dart';
-import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
-import '../../pdf_creation/domain/pdf_models.dart';
+import 'package:scanvault/features/annotation/presentation/pdf_annotation_screen.dart';
+import 'package:scanvault/features/annotation/presentation/signature_placement_screen.dart';
+import 'package:scanvault/features/ocr/presentation/ocr_text_viewer_sheet.dart';
+import 'package:scanvault/features/pdf_creation/domain/pdf_models.dart';
 
 /// Production in-app interactive PDF viewer, exporter, and document inspector.
 class PdfViewerScreen extends StatefulWidget {
@@ -202,6 +204,34 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_note_rounded),
+            tooltip: 'Annotate PDF',
+            onPressed: () async {
+              final modified = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => PdfAnnotationScreen(document: widget.document),
+                ),
+              );
+              if (modified == true) {
+                _checkFile();
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.history_edu_rounded),
+            tooltip: 'Sign Document',
+            onPressed: () async {
+              final modified = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => SignaturePlacementScreen(document: widget.document),
+                ),
+              );
+              if (modified == true) {
+                _checkFile();
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.share_rounded),
             tooltip: 'Share PDF',
