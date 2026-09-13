@@ -22,7 +22,7 @@ class AppDatabase {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, _dbName);
 
-    return await openDatabase(
+    final databaseInstance = await openDatabase(
       dbPath,
       version: _dbVersion,
       onCreate: (db, version) async {
@@ -69,6 +69,12 @@ class AppDatabase {
         await db.execute('CREATE INDEX idx_documents_user_folder ON documents(user_id, folder_id);');
       },
     );
+
+    // Automatically purge any lingering demo documents and folders from early versions
+    await databaseInstance.delete('documents', where: "id LIKE 'doc-%' OR id LIKE 'demo-%' OR id LIKE 'sample-%'");
+    await databaseInstance.delete('folders', where: "id LIKE 'folder-%' OR id LIKE 'demo-%'");
+
+    return databaseInstance;
   }
 
   // --- Document Operations ---
@@ -137,6 +143,12 @@ class AppDatabase {
       where: 'user_id = ? AND id = ?',
       whereArgs: [userId, id],
     );
+  }
+
+  Future<void> purgeDemoDocuments() async {
+    final db = await database;
+    await db.delete('documents', where: "id LIKE 'doc-%' OR id LIKE 'demo-%' OR id LIKE 'sample-%'");
+    await db.delete('folders', where: "id LIKE 'folder-%' OR id LIKE 'demo-%'");
   }
 
   // --- Folder Operations ---

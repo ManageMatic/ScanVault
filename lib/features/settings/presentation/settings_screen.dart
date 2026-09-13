@@ -297,14 +297,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : (isDark ? AppColors.darkSurfaceContainerHigh : AppColors.surfaceContainerHigh),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    widget.authController?.isAuthenticated == true
-                        ? Icons.person_rounded
-                        : Icons.person_outline_rounded,
-                    color: widget.authController?.isAuthenticated == true
-                        ? AppColors.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  child: widget.authController?.currentUser?.avatarUrl != null &&
+                          widget.authController!.currentUser!.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            widget.authController!.currentUser!.avatarUrl!,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          widget.authController?.isAuthenticated == true
+                              ? Icons.person_rounded
+                              : Icons.person_outline_rounded,
+                          color: widget.authController?.isAuthenticated == true
+                              ? AppColors.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                 ),
                 title: Text(
                   widget.authController?.isAuthenticated == true

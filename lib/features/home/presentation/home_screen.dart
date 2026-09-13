@@ -142,14 +142,30 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: widget.onNavigateToDocuments,
           ),
           IconButton(
-            icon: Icon(
-              widget.authController?.isAuthenticated == true
-                  ? Icons.account_circle_rounded
-                  : Icons.account_circle_outlined,
-              color: widget.authController?.isAuthenticated == true
-                  ? AppColors.primary
-                  : null,
-            ),
+            icon: widget.authController?.currentUser?.avatarUrl != null &&
+                    widget.authController!.currentUser!.avatarUrl!.isNotEmpty
+                ? ClipOval(
+                    child: Image.network(
+                      widget.authController!.currentUser!.avatarUrl!,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.account_circle_rounded,
+                        color: AppColors.primary,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    widget.authController?.isAuthenticated == true
+                        ? Icons.account_circle_rounded
+                        : Icons.account_circle_outlined,
+                    color: widget.authController?.isAuthenticated == true
+                        ? AppColors.primary
+                        : null,
+                    size: 28,
+                  ),
             tooltip: widget.authController?.isAuthenticated == true
                 ? 'Account Profile (${widget.authController?.currentUser?.email})'
                 : 'Account & Sign In',

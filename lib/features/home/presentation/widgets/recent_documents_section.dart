@@ -156,7 +156,8 @@ class _RecentDocumentsSectionState extends State<RecentDocumentsSection> {
 
         if (docs.isEmpty)
           Container(
-            padding: const EdgeInsets.all(24),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurfaceContainerLowest : AppColors.surfaceContainerLowest,
               borderRadius: AppDimens.roundedLg,
@@ -165,14 +166,43 @@ class _RecentDocumentsSectionState extends State<RecentDocumentsSection> {
                 width: 1,
               ),
             ),
-            child: Center(
-              child: Text(
-                'No documents found in this filter.',
-                textAlign: TextAlign.center,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.document_scanner_outlined,
+                    color: AppColors.primary,
+                    size: 26,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  widget.documents.isEmpty ? 'Your Vault is Ready' : 'No matching documents',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.titleSmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.documents.isEmpty
+                      ? 'Tap "Scan Doc" above or import files to start adding secure documents to your on-device vault.'
+                      : 'No documents match the selected filter category.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           )
         else

@@ -9,17 +9,72 @@ class SupabaseAuthRepository implements AuthRepository {
   final SupabaseClient _supabaseClient;
   final StreamController<AuthUser?> _authStateController = StreamController<AuthUser?>.broadcast();
 
+  String? _extractAvatarUrl(User user) {
+    final meta = user.userMetadata;
+    if (meta != null) {
+      if (meta['avatar_url'] is String && (meta['avatar_url'] as String).isNotEmpty) {
+        return meta['avatar_url'] as String;
+      }
+      if (meta['picture'] is String && (meta['picture'] as String).isNotEmpty) {
+        return meta['picture'] as String;
+      }
+      if (meta['avatar'] is String && (meta['avatar'] as String).isNotEmpty) {
+        return meta['avatar'] as String;
+      }
+    }
+    if (user.identities != null) {
+      for (final identity in user.identities!) {
+        final idData = identity.identityData;
+        if (idData != null) {
+          if (idData['avatar_url'] is String && (idData['avatar_url'] as String).isNotEmpty) {
+            return idData['avatar_url'] as String;
+          }
+          if (idData['picture'] is String && (idData['picture'] as String).isNotEmpty) {
+            return idData['picture'] as String;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  String _extractName(User user) {
+    final meta = user.userMetadata;
+    if (meta != null) {
+      if (meta['full_name'] is String && (meta['full_name'] as String).isNotEmpty) {
+        return meta['full_name'] as String;
+      }
+      if (meta['name'] is String && (meta['name'] as String).isNotEmpty) {
+        return meta['name'] as String;
+      }
+    }
+    if (user.identities != null) {
+      for (final identity in user.identities!) {
+        final idData = identity.identityData;
+        if (idData != null) {
+          if (idData['full_name'] is String && (idData['full_name'] as String).isNotEmpty) {
+            return idData['full_name'] as String;
+          }
+          if (idData['name'] is String && (idData['name'] as String).isNotEmpty) {
+            return idData['name'] as String;
+          }
+        }
+      }
+    }
+    return user.email?.split('@').first ?? 'User';
+  }
+
   SupabaseAuthRepository([SupabaseClient? client])
       : _supabaseClient = client ?? Supabase.instance.client {
     _supabaseClient.auth.onAuthStateChange.listen((data) {
       final session = data.session;
       final user = session?.user;
       if (user != null) {
-        final name = user.userMetadata?['name'] as String? ?? user.email?.split('@').first ?? 'User';
         _authStateController.add(AuthUser(
           id: user.id,
           email: user.email ?? '',
-          name: name,
+          name: _extractName(user),
+          avatarUrl: _extractAvatarUrl(user),
           createdAt: DateTime.tryParse(user.createdAt) ?? DateTime.now(),
         ));
       } else {
@@ -35,11 +90,11 @@ class SupabaseAuthRepository implements AuthRepository {
   AuthUser? get currentUser {
     final user = _supabaseClient.auth.currentUser;
     if (user == null) return null;
-    final name = user.userMetadata?['name'] as String? ?? user.email?.split('@').first ?? 'User';
     return AuthUser(
       id: user.id,
       email: user.email ?? '',
-      name: name,
+      name: _extractName(user),
+      avatarUrl: _extractAvatarUrl(user),
       createdAt: DateTime.tryParse(user.createdAt) ?? DateTime.now(),
     );
   }

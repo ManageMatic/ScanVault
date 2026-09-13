@@ -3,7 +3,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
 import '../../../shared/models/folder.dart';
-import '../../home/data/sample_data.dart';
 import '../domain/documents_repository.dart';
 
 /// Production SQLite & File-backed implementation of DocumentsRepository with user data isolation.
@@ -11,7 +10,7 @@ class LocalDocumentsRepository implements DocumentsRepository {
   final AppDatabase _db;
   final StorageManagerService _storageService;
   final String Function() _userIdProvider;
-  bool _seeded = false;
+  bool _purged = false;
 
   LocalDocumentsRepository({
     AppDatabase? db,
@@ -24,39 +23,34 @@ class LocalDocumentsRepository implements DocumentsRepository {
   String get _currentUserId => _userIdProvider();
   StorageManagerService get storageService => _storageService;
 
-  Future<void> _ensureSeeded() async {
-    if (_seeded) return;
-    final docs = await _db.getDocumentsForUser(_currentUserId);
-    if (docs.isEmpty) {
-      for (final doc in SampleData.initialDocuments) {
-        await _db.insertDocument(_currentUserId, doc);
-      }
-    }
-    _seeded = true;
+  Future<void> _ensureClean() async {
+    if (_purged) return;
+    await _db.purgeDemoDocuments();
+    _purged = true;
   }
 
   @override
   Future<List<Document>> getAllDocuments() async {
-    await _ensureSeeded();
+    await _ensureClean();
     return await _db.getDocumentsForUser(_currentUserId);
   }
 
   @override
   Future<List<Document>> getRecentDocuments({int limit = 5}) async {
-    await _ensureSeeded();
+    await _ensureClean();
     final docs = await _db.getDocumentsForUser(_currentUserId);
     return docs.take(limit).toList();
   }
 
   @override
   Future<List<Document>> getFavoriteDocuments() async {
-    await _ensureSeeded();
+    await _ensureClean();
     return await _db.getDocumentsForUser(_currentUserId, onlyFavorites: true);
   }
 
   @override
   Future<List<Document>> getDocumentsByFolder(String folderId) async {
-    await _ensureSeeded();
+    await _ensureClean();
     return await _db.getDocumentsForUser(_currentUserId, folderId: folderId);
   }
 
@@ -117,7 +111,7 @@ class LocalDocumentsRepository implements DocumentsRepository {
 
   @override
   Future<List<Document>> searchDocuments(String query) async {
-    await _ensureSeeded();
+    await _ensureClean();
     return await _db.getDocumentsForUser(_currentUserId, searchQuery: query);
   }
 

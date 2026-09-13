@@ -62,15 +62,49 @@ class AccountProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.primary,
-                    child: Text(
-                      user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                      style: AppTypography.headlineMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ClipOval(
+                    child: Container(
+                      width: 76,
+                      height: 76,
+                      color: AppColors.primary,
+                      child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                          ? Image.network(
+                              user!.avatarUrl!,
+                              width: 76,
+                              height: 76,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Center(
+                                child: Text(
+                                  user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                  style: AppTypography.headlineMedium.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : Center(
+                              child: Text(
+                                user != null && user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                style: AppTypography.headlineMedium.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 12),
