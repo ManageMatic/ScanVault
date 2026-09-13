@@ -12,6 +12,7 @@ import 'widgets/privacy_banner.dart';
 import 'widgets/recent_documents_section.dart';
 
 import '../../auth/domain/auth_controller.dart';
+import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
 
 /// Primary Home Dashboard Screen adhering to Google Stitch specifications.
 class HomeScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToDocuments;
   final VoidCallback onOpenScanner;
   final VoidCallback onImportPhotos;
+  final VoidCallback onExtractOcr;
   final VoidCallback onOpenTools;
   final VoidCallback? onOpenAccount;
 
@@ -30,6 +32,7 @@ class HomeScreen extends StatefulWidget {
     required this.onNavigateToDocuments,
     required this.onOpenScanner,
     required this.onImportPhotos,
+    required this.onExtractOcr,
     required this.onOpenTools,
     this.onOpenAccount,
   });
@@ -64,9 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case QuickActionType.importPhotos:
         widget.onImportPhotos();
         break;
+      case QuickActionType.extractOcr:
+        widget.onExtractOcr();
+        break;
       case QuickActionType.importPdf:
       case QuickActionType.createPdf:
-      case QuickActionType.extractOcr:
         widget.onOpenTools();
         break;
     }
@@ -104,23 +109,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Pages: ${document.pageCount} • Size: ${(document.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
                 style: AppTypography.bodyMedium,
               ),
-              if (document.extractedOcrText != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Extracted OCR Text:',
-                  style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+              if (document.extractedOcrText != null && document.extractedOcrText!.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Extracted OCR Text:',
+                      style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        OcrTextViewerSheet.show(
+                          context: context,
+                          title: document.title,
+                          rawText: document.extractedOcrText!,
+                        );
+                      },
+                      icon: const Icon(Icons.fullscreen_rounded, size: 18),
+                      label: const Text('View Full Text'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     document.extractedOcrText!,
                     style: AppTypography.bodySmall,
-                    maxLines: 4,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

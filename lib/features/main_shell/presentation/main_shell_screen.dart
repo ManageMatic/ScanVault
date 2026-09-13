@@ -12,6 +12,9 @@ import '../../documents/domain/documents_controller.dart';
 import '../../documents/presentation/documents_screen.dart';
 import '../../home/domain/home_controller.dart';
 import '../../home/presentation/home_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../ocr/data/mlkit_ocr_service.dart';
+import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
 import '../../pdf_tools/presentation/pdf_tools_screen.dart';
 import '../../scanner/domain/scanner_controller.dart';
 import '../../scanner/presentation/scanner_screen.dart';
@@ -122,6 +125,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
   }
 
+  void _openExtractOcr() async {
+    final picker = ImagePicker();
+    final img = await picker.pickImage(source: ImageSource.gallery);
+    if (img == null || !mounted) return;
+
+    final bytes = await img.readAsBytes();
+    final ocrService = MLKitOcrService();
+    final result = await ocrService.recognizeTextFromBytes(bytes);
+
+    if (mounted) {
+      OcrTextViewerSheet.show(
+        context: context,
+        title: 'OCR: ${img.name}',
+        rawText: result.fullText.isNotEmpty ? result.fullText : 'No readable text recognized in image.',
+        ocrResult: result,
+      );
+    }
+  }
+
   void _openAccount() {
     if (_authController.isAuthenticated) {
       Navigator.of(context).push(
@@ -162,6 +184,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         onNavigateToDocuments: () => setState(() => _currentIndex = 1),
         onOpenScanner: _openScanner,
         onImportPhotos: _openGalleryImport,
+        onExtractOcr: _openExtractOcr,
         onOpenTools: () => setState(() => _currentIndex = 3),
         onOpenAccount: _openAccount,
       ),

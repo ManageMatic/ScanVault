@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimens.dart';
@@ -7,6 +8,8 @@ import '../../../core/widgets/document_card.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/loading_state_view.dart';
 import '../../../shared/models/document.dart';
+import '../../ocr/data/mlkit_ocr_service.dart';
+import '../../ocr/presentation/ocr_text_viewer_sheet.dart';
 import '../domain/documents_controller.dart';
 import 'widgets/document_search_bar.dart';
 import 'widgets/sort_filter_sheet.dart';
@@ -60,12 +63,22 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   void _handleMenuAction(Document doc, DocumentMenuAction action) {
     switch (action) {
+      case DocumentMenuAction.ocr:
+        if (doc.extractedOcrText != null && doc.extractedOcrText!.isNotEmpty) {
+          OcrTextViewerSheet.show(
+            context: context,
+            title: doc.title,
+            rawText: doc.extractedOcrText!,
+          );
+        } else {
+          _runOcrOnDocument(doc);
+        }
+        break;
       case DocumentMenuAction.open:
       case DocumentMenuAction.share:
       case DocumentMenuAction.exportPdf:
       case DocumentMenuAction.rename:
       case DocumentMenuAction.moveToFolder:
-      case DocumentMenuAction.ocr:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${action.name.toUpperCase()}: ${doc.title}'),
@@ -85,6 +98,43 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           ),
         );
         break;
+    }
+  }
+
+  void _runOcrOnDocument(Document doc) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Running on-device OCR recognition...'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final path = doc.thumbnailPath ?? doc.filePath;
+    if (path.isNotEmpty) {
+      final file = File(path);
+      if (await file.exists()) {
+        final ocrService = MLKitOcrService();
+        final result = await ocrService.recognizeTextFromImage(file);
+        if (mounted) {
+          OcrTextViewerSheet.show(
+            context: context,
+            title: doc.title,
+            rawText: result.fullText.isNotEmpty ? result.fullText : 'No readable text recognized.',
+            ocrResult: result,
+          );
+        }
+        return;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not read document file for OCR'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

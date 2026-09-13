@@ -8,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
 import '../../image_processing/domain/image_processor.dart';
+import '../../ocr/data/mlkit_ocr_service.dart';
 
 class PdfCreationParams {
   final String title;
@@ -95,6 +96,21 @@ class PdfGeneratorService {
       );
     }
 
+    // Extract on-device OCR text from pages
+    final ocrService = MLKitOcrService();
+    final ocrTexts = <String>[];
+    for (final pageBytes in params.pageImages) {
+      try {
+        final res = await ocrService.recognizeTextFromBytes(pageBytes);
+        if (res.fullText.isNotEmpty) {
+          ocrTexts.add(res.fullText);
+        }
+      } catch (e) {
+        // Continue silently if single page fails OCR
+      }
+    }
+    final combinedOcrText = ocrTexts.join('\n\n').trim();
+
     final doc = Document(
       id: documentId,
       title: params.title.isNotEmpty ? params.title : 'Scan_${DateTime.now().millisecondsSinceEpoch}',
@@ -103,6 +119,8 @@ class PdfGeneratorService {
       folderId: params.folderId,
       fileSize: realSizeBytes,
       compressionPreset: params.compressionPreset,
+      extractedOcrText: combinedOcrText.isNotEmpty ? combinedOcrText : null,
+      ocrStatus: combinedOcrText.isNotEmpty ? OcrStatus.completed : OcrStatus.none,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
