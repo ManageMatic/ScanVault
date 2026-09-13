@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_dimens.dart';
-import '../../../../core/constants/app_typography.dart';
-import '../../domain/pdf_tools_controller.dart';
+import 'package:scanvault/core/constants/app_colors.dart';
+import 'package:scanvault/core/constants/app_dimens.dart';
+import 'package:scanvault/core/constants/app_typography.dart';
+import 'package:scanvault/features/pdf_tools/domain/entities/pdf_tool_definition.dart';
 
 /// Reusable interactive tile for PDF utilities conforming to Google Stitch specs.
 class ToolCard extends StatelessWidget {
-  final PdfToolItem tool;
+  final PdfToolDefinition tool;
   final VoidCallback onTap;
 
   const ToolCard({

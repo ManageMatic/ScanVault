@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimens.dart';
-import '../../../core/constants/app_typography.dart';
-import '../domain/pdf_tools_controller.dart';
-import 'widgets/tool_card.dart';
+import 'package:path/path.dart' as p;
+import 'package:scanvault/core/constants/app_colors.dart';
+import 'package:scanvault/core/constants/app_dimens.dart';
+import 'package:scanvault/core/constants/app_typography.dart';
+import 'package:scanvault/features/ocr/data/mlkit_ocr_service.dart';
+import 'package:scanvault/features/ocr/presentation/ocr_text_viewer_sheet.dart';
+import 'package:scanvault/features/pdf_tools/data/repositories/local_pdf_tools_repository.dart';
+import 'package:scanvault/features/pdf_tools/domain/entities/pdf_processing_progress.dart';
+import 'package:scanvault/features/pdf_tools/domain/pdf_tools_controller.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/compress_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/delete_pages_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/extract_pages_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/images_to_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/merge_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/pdf_metadata_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/pdf_to_images_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/pdf_tool_result_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/protect_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/rotate_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/split_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/screens/watermark_pdf_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/widgets/pdf_document_picker_sheet.dart';
+import 'package:scanvault/features/pdf_tools/presentation/widgets/tool_card.dart';
+import 'package:scanvault/features/pdf_tools/presentation/widgets/tool_progress_modal.dart';
 
 /// PDF Utilities suite screen conforming strictly to Stitch specifications.
 class PdfToolsScreen extends StatefulWidget {
@@ -35,13 +54,144 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
     if (mounted) setState(() {});
   }
 
-  void _onToolSelected(BuildContext context, PdfToolItem tool) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${tool.title} selected • Sandbox ready'),
-        behavior: SnackBarBehavior.floating,
-      ),
+  void _onToolSelected(BuildContext context, PdfToolDefinition tool) {
+    _controller.recordToolUsed(tool.id);
+
+    switch (tool.type) {
+      case PdfToolType.merge:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MergePdfScreen()));
+        break;
+      case PdfToolType.split:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SplitPdfScreen()));
+        break;
+      case PdfToolType.compress:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompressPdfScreen()));
+        break;
+      case PdfToolType.rotateReorder:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RotatePdfScreen()));
+        break;
+      case PdfToolType.extractPages:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ExtractPagesScreen()));
+        break;
+      case PdfToolType.deletePages:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DeletePagesScreen()));
+        break;
+      case PdfToolType.imagesToPdf:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ImagesToPdfScreen()));
+        break;
+      case PdfToolType.pdfToImages:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PdfToImagesScreen()));
+        break;
+      case PdfToolType.protectPin:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProtectPdfScreen()));
+        break;
+      case PdfToolType.watermark:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WatermarkPdfScreen()));
+        break;
+      case PdfToolType.metadata:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PdfMetadataScreen()));
+        break;
+      case PdfToolType.ocrTextExtractor:
+        _handleOcrTool(context);
+        break;
+      case PdfToolType.flatten:
+        _handleFlattenTool(context);
+        break;
+      case PdfToolType.addSignature:
+      case PdfToolType.annotateMarkup:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${tool.title} is coming in the next release.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        break;
+    }
+  }
+
+  Future<void> _handleOcrTool(BuildContext context) async {
+    final picked = await PdfDocumentPickerSheet.show(
+      context,
+      title: 'Select Document for OCR',
+      allowMultiple: false,
+      allowImagePicker: true,
     );
+
+    if (picked != null && picked.isNotEmpty && context.mounted) {
+      final file = picked.first;
+      final progressNotifier = ValueNotifier(
+        const PdfProcessingProgress(progress: 0.0, statusMessage: 'Extracting text with on-device OCR...'),
+      );
+      ToolProgressModal.show(context, progressNotifier);
+
+      try {
+        final ocrService = MLKitOcrService();
+        final ocrResult = await ocrService.recognizeTextFromImage(file);
+        if (context.mounted) {
+          Navigator.of(context).pop(); // dismiss modal
+          OcrTextViewerSheet.show(
+            context: context,
+            title: p.basename(file.path),
+            rawText: ocrResult.fullText.isNotEmpty ? ocrResult.fullText : 'No text recognized in this document.',
+            ocrResult: ocrResult,
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('OCR extraction failed: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleFlattenTool(BuildContext context) async {
+    final picked = await PdfDocumentPickerSheet.show(
+      context,
+      title: 'Select PDF to Flatten',
+      allowMultiple: false,
+    );
+
+    if (picked != null && picked.isNotEmpty && context.mounted) {
+      final file = picked.first;
+      const userId = 'local_user';
+      final repository = LocalPdfToolsRepository();
+      final progressNotifier = ValueNotifier(
+        const PdfProcessingProgress(progress: 0.0, statusMessage: 'Flattening document...'),
+      );
+
+      ToolProgressModal.show(context, progressNotifier);
+
+      final result = await repository.flattenPdf(
+        userId: userId,
+        sourcePdf: file,
+        onProgress: (p) => progressNotifier.value = p,
+      );
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // dismiss modal
+
+        if (result.success) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PdfToolResultScreen(
+                toolTitle: 'Flatten PDF',
+                result: result,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.errorMessage ?? 'Flatten failed.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -49,6 +199,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final groups = _controller.groupedCategories;
     final totalCount = _controller.filteredTools.length;
+    final recents = _controller.recentUsages;
 
     return Scaffold(
       appBar: AppBar(
@@ -132,7 +283,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                                 borderRadius: BorderRadius.circular(9999),
                               ),
                               child: Text(
-                                'LOCAL ONLY',
+                                '100% LOCAL',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: AppColors.onSecondaryContainer,
                                   fontSize: 10,
@@ -142,7 +293,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Native Sandbox',
+                              'Offline Studio',
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.tertiaryFixed,
                                 fontWeight: FontWeight.w600,
@@ -152,7 +303,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '13 Pro Utilities • Free Forever',
+                          '13 Pro PDF Utilities',
                           style: AppTypography.titleMedium.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -174,70 +325,68 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 3. Recently Used Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'RECENTLY USED',
-                  style: AppTypography.labelSmall.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(
-                    'Clear',
+            // 2. Recently Used Row
+            if (recents.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'RECENTLY USED',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.primary,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: Theme.of(context).colorScheme.outline,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  _buildRecentChip(
-                    context,
-                    title: 'Merge (Yesterday)',
-                    icon: Icons.call_merge_rounded,
-                    iconColor: AppColors.primary,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 8),
-                  _buildRecentChip(
-                    context,
-                    title: 'Compress (~68% saved)',
-                    icon: Icons.zoom_in_map_rounded,
-                    iconColor: AppColors.secondary,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 8),
-                  _buildRecentChip(
-                    context,
-                    title: 'Quick Sign',
-                    icon: Icons.draw_rounded,
-                    iconColor: AppColors.tertiary,
-                    onTap: () {},
+                  TextButton(
+                    onPressed: _controller.clearRecentTools,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: Text(
+                      'Clear',
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 6),
 
-            // 4. Search Bar
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [
+                    for (final usage in recents) ...[
+                      Builder(
+                        builder: (ctx) {
+                          final tool = _controller.findToolById(usage.toolId);
+                          if (tool == null) return const SizedBox.shrink();
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _buildRecentChip(
+                              ctx,
+                              title: tool.title,
+                              icon: tool.icon,
+                              iconColor: tool.accentColor,
+                              onTap: () => _onToolSelected(ctx, tool),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 3. Search Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
@@ -295,7 +444,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // 5. Categorized Tool Groups
+            // 4. Categorized Tool Groups
             if (groups.isEmpty) ...[
               Center(
                 child: Padding(
@@ -327,7 +476,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Try searching for synonyms like 'convert', 'secure', 'sign', or 'extract'.",
+                        "Try searching for keywords like 'merge', 'split', 'compress', or 'rotate'.",
                         style: AppTypography.bodySmall.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -389,7 +538,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
               ],
             ],
 
-            // 6. Bottom WebAssembly SIMD Acceleration Info Card
+            // 5. Hardware-Accelerated Engine Footer Card
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -423,7 +572,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'WebAssembly PDF Engine',
+                          '100% Offline PDF Engine',
                           style: AppTypography.titleSmall.copyWith(
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -431,7 +580,7 @@ class _PdfToolsScreenState extends State<PdfToolsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Hardware-accelerated processing via SIMD v2.4',
+                          'Local AES-256 encryption, lossless vector parsing & on-device OCR',
                           style: AppTypography.bodySmall.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
