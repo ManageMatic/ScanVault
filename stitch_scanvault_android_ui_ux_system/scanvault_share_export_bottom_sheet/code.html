@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>ScanVault</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "background": "#f9f9ff", "on-primary-fixed": "#00201d", "secondary-fixed": "#ffddb8", "surface": "#f9f9ff", "inverse-primary": "#6bd8cb", "surface-variant": "#d8e3fb", "surface-container-low": "#f0f3ff", "surface-container-highest": "#d8e3fb", "surface-container-lowest": "#ffffff", "secondary-container": "#fea619", "on-tertiary": "#ffffff", "on-surface-variant": "#3d4947", "on-error-container": "#93000a", "tertiary-fixed-dim": "#80d5cb", "error-container": "#ffdad6", "on-tertiary-fixed": "#00201d", "outline-variant": "#bcc9c6", "surface-container": "#e7eeff", "error": "#ba1a1a", "on-primary-container": "#f4fffc", "on-secondary-fixed-variant": "#653e00", "on-background": "#111c2d", "inverse-surface": "#263143", "on-primary": "#ffffff", "on-secondary-container": "#684000", "on-primary-fixed-variant": "#005049", "inverse-on-surface": "#ecf1ff", "tertiary": "#006860", "primary-container": "#008378", "surface-dim": "#cfdaf2", "tertiary-container": "#248279", "secondary": "#855300", "on-surface": "#111c2d", "secondary-fixed-dim": "#ffb95f", "surface-bright": "#f9f9ff", "primary-fixed": "#89f5e7", "surface-tint": "#006a61", "on-tertiary-container": "#f3fffc", "primary-fixed-dim": "#6bd8cb", "tertiary-fixed": "#9cf2e8", "primary": "#00685f", "on-secondary-fixed": "#2a1700", "on-secondary": "#ffffff", "on-tertiary-fixed-variant": "#00504a", "surface-container-high": "#dee8ff", "outline": "#6d7a77", "on-error": "#ffffff" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xl": "2rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "space-md": "1rem", "gutter": "1rem", "gutter-tablet": "1.5rem", "margin-tablet": "2rem", "space-xs": "0.25rem", "margin": "1rem" }, fontFamily: { "headline-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "title-lg": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"] }, fontSize: { "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "display-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "600" }], "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }] } } } }</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100vh; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-on-background/45 text-on-surface font-body-md text-body-md min-h-screen flex flex-col justify-end antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><div class="fixed inset-0 -z-10 backdrop-blur-sm" onclick="history.back()"></div><section class="relative w-full max-w-lg mx-auto bg-surface-container-lowest rounded-t-[28px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col pt-3 pb-safe overflow-hidden transition-all duration-300"><div class="w-full flex justify-center py-1.5 cursor-grab active:cursor-grabbing"><div class="w-9 h-1 bg-outline-variant rounded-full"></div></div><div class="px-gutter pt-2 pb-3 flex items-center justify-between"><h2 class="font-title-lg text-title-lg text-on-surface font-semibold tracking-tight truncate pr-space-sm">Export And Secure Share Sheet</h2><button aria-label="Dismiss dialog" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors shrink-0" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[22px]">close</span></button></div><main class="flex-1 flex flex-col relative w-full px-gutter bg-surface-container-lowest overflow-y-auto max-h-[724px]"><div class="flex flex-col w-full pb-6 space-y-5">
+<!-- Document Summary Header Card -->
+<div class="relative bg-surface-container-low rounded-2xl p-4 shadow-sm">
+<div class="flex items-start space-x-3.5">
+<div class="relative w-14 h-16 rounded-xl overflow-hidden shadow-sm shrink-0 bg-surface-container flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A clean top-down macro studio photograph of an official corporate legal document with high-resolution signed signature lines, elegant typography, crisp edges, subtle teal stamp, and textured linen paper under soft diffuse warm light, conveying legal security and privacy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-dJD5IgIrzD7SAPoN_Km0cdf7mBWF4u-vHszPUrl_5kEqIR0_mBfW43vZHbP6X28z3BPkYSpsOCHpy6AJ0NTf2pLkQhQUdOg3HMWoapLOQ4pk4NxelRyWFPbPnKgRIMEYb7ViUlSC7p7t24SJco9xKN9_N6p8C4_tYMofNzevBLMeRXoC63N2KcvFFu0JMpAUre-s1GPHm-R78Gqc5Lj-cP_ebvRPi9hmdmIlQUpUDBhtv3DO6BtH"/>
+<div class="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none"></div>
+<div class="absolute bottom-1 right-1 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[10px] font-label-sm text-primary font-bold shadow-xs">
+          PDF
+        </div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold truncate">
+            Employment_Agreement_2026.pdf
+          </h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+          Audit ready • Legal Binding Draft
+        </p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-on-surface-variant font-medium">
+            6 Pages
+          </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-on-surface-variant font-medium">
+            1.8 MB
+          </span>
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-primary-container/20 text-primary font-semibold">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span>AES-256</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Export Format Selector -->
+<div class="flex flex-col space-y-2.5">
+<div class="flex items-center justify-between px-1">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Export Format</span>
+<span class="font-label-md text-label-md text-primary font-medium">Format details</span>
+</div>
+<div class="grid grid-cols-2 gap-2.5" id="format-grid">
+<!-- Standard PDF (Active) -->
+<button class="format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-primary-container text-on-primary-container shadow-md" data-format="pdf-standard" onclick="selectFormat(this)" type="button">
+<div class="flex items-start justify-between">
+<div class="w-8 h-8 rounded-xl bg-on-primary-container/15 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<span class="status-indicator material-symbols-outlined text-[20px] text-on-primary-container">check_circle</span>
+</div>
+<div class="mt-3">
+<p class="font-title-sm text-title-sm font-semibold leading-tight">Standard PDF</p>
+<p class="font-body-sm text-body-sm opacity-85 text-[11px] mt-0.5 line-clamp-1">Multi-page vector</p>
+</div>
+</button>
+<!-- Flattened PDF -->
+<button class="format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-surface-container-low text-on-surface hover:bg-surface-container" data-format="pdf-flattened" onclick="selectFormat(this)" type="button">
+<div class="flex items-start justify-between">
+<div class="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">layers_clear</span>
+</div>
+<span class="status-indicator material-symbols-outlined text-[20px] text-outline-variant">radio_button_unchecked</span>
+</div>
+<div class="mt-3">
+<div class="flex items-center space-x-1">
+<p class="font-title-sm text-title-sm font-semibold leading-tight">Flattened PDF</p>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5 line-clamp-1">Merged ink &amp; stamps</p>
+</div>
+</button>
+<!-- High-Res ZIP Archive -->
+<button class="format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-surface-container-low text-on-surface hover:bg-surface-container" data-format="images-zip" onclick="selectFormat(this)" type="button">
+<div class="flex items-start justify-between">
+<div class="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">folder_zip</span>
+</div>
+<span class="status-indicator material-symbols-outlined text-[20px] text-outline-variant">radio_button_unchecked</span>
+</div>
+<div class="mt-3">
+<p class="font-title-sm text-title-sm font-semibold leading-tight">Image Archive</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5 line-clamp-1">300 DPI PNG pack</p>
+</div>
+</button>
+<!-- Extracted Text Payload -->
+<button class="format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-surface-container-low text-on-surface hover:bg-surface-container" data-format="ocr-markdown" onclick="selectFormat(this)" type="button">
+<div class="flex items-start justify-between">
+<div class="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">document_scanner</span>
+</div>
+<span class="status-indicator material-symbols-outlined text-[20px] text-outline-variant">radio_button_unchecked</span>
+</div>
+<div class="mt-3">
+<p class="font-title-sm text-title-sm font-semibold leading-tight">Plain / OCR MD</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5 line-clamp-1">Clean markdown text</p>
+</div>
+</button>
+</div>
+</div>
+<!-- Compression Tuning Slider Section -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Quality &amp; Payload</span>
+</div>
+<span class="font-label-md text-label-md px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-semibold" id="compression-badge">
+        65% Smaller
+      </span>
+</div>
+<!-- Segmented Toggle Strip -->
+<div class="grid grid-cols-3 gap-1 bg-surface-container p-1 rounded-xl">
+<button class="compression-btn py-2 px-1 rounded-lg text-center transition-all duration-150 text-on-surface-variant" onclick="setCompression(this, '1.8 MB', 'No Compression')" type="button">
+<p class="font-label-md text-label-md font-semibold truncate">Original</p>
+<p class="font-body-sm text-[10px] text-on-surface-variant">1.8 MB</p>
+</button>
+<button class="compression-btn py-2 px-1 rounded-lg text-center transition-all duration-150 bg-surface-container-lowest text-primary shadow-xs" onclick="setCompression(this, '640 KB', '65% Smaller')" type="button">
+<p class="font-label-md text-label-md font-bold truncate">Optimized</p>
+<p class="font-body-sm text-[10px] text-primary font-semibold">640 KB</p>
+</button>
+<button class="compression-btn py-2 px-1 rounded-lg text-center transition-all duration-150 text-on-surface-variant" onclick="setCompression(this, '290 KB', '84% Smaller')" type="button">
+<p class="font-label-md text-label-md font-semibold truncate">Maximum</p>
+<p class="font-body-sm text-[10px] text-on-surface-variant">290 KB</p>
+</button>
+</div>
+</div>
+<!-- Cryptographic Hardening Section -->
+<div class="bg-surface-container-low rounded-2xl p-4 flex flex-col space-y-4">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">shield_lock</span>
+<h4 class="font-title-sm text-title-sm text-on-surface font-semibold">Security &amp; Cryptography</h4>
+</div>
+<!-- Toggle 1: AES-256 Password -->
+<div class="flex flex-col space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex-1 pr-3">
+<p class="font-title-sm text-title-sm text-on-surface font-medium">Protect with Password</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Standardized 256-bit GCM envelope</p>
+</div>
+<!-- M3 Switch -->
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-primary" onclick="toggleSwitch(this, 'password-details')" role="switch" type="button">
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">check</span>
+</span>
+</button>
+</div>
+<!-- Expandable Password Content -->
+<div class="flex flex-col space-y-2 pt-1 transition-all duration-200" id="password-details">
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-lowest text-on-surface rounded-xl px-3.5 py-2.5 pr-11 font-body-md text-body-md shadow-xs focus:outline-none focus:ring-2 focus:ring-primary" id="password-input" placeholder="Set decryption passcode" type="password" value="VaultK3y!9921#Offline"/>
+<button class="absolute right-2 w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors" onclick="togglePasswordVisibility()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="pwd-eye-icon">visibility_off</span>
+</button>
+</div>
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center space-x-1 text-primary">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-label-sm font-semibold">Military Grade • 256-bit GCM</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Auto-derived PBKDF2</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Toggle 2: EXIF Stripping -->
+<div class="flex items-center justify-between">
+<div class="flex-1 pr-3">
+<p class="font-title-sm text-title-sm text-on-surface font-medium">Strip EXIF &amp; Device Footprints</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Purges GPS coords, camera model &amp; serials</p>
+</div>
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-primary" onclick="toggleSwitch(this)" role="switch" type="button">
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">check</span>
+</span>
+</button>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Toggle 3: Cryptographic Watermark -->
+<div class="flex flex-col space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex-1 pr-3">
+<p class="font-title-sm text-title-sm text-on-surface font-medium">Embed SHA-256 Digest</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tamper-evident invisible verification seal</p>
+</div>
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-primary" onclick="toggleSwitch(this, 'hash-preview')" role="switch" type="button">
+<span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">check</span>
+</span>
+</button>
+</div>
+<!-- Hash badge chip -->
+<div class="flex items-center space-x-2 bg-surface-container px-3 py-1.5 rounded-lg" id="hash-preview">
+<span class="material-symbols-outlined text-[16px] text-primary">fingerprint</span>
+<span class="font-label-sm text-label-sm text-on-surface font-mono truncate">
+          sha256:e7f2c81ad84093fc003...89a1fd
+        </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant ml-auto">check</span>
+</div>
+</div>
+</div>
+<!-- Android Sharesheet Targets Row -->
+<div class="flex flex-col space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Direct Destination</span>
+<span class="font-label-md text-label-md text-on-surface-variant">System Hub</span>
+</div>
+<div class="flex items-center space-x-3 overflow-x-auto pb-2 pt-1 -mx-1 px-1">
+<!-- Quick Share / Nearby -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">sensors</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Quick Share</span>
+</button>
+<!-- Signal Secure Send -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">chat_bubble</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Signal</span>
+</button>
+<!-- Gmail -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">mail</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Gmail</span>
+</button>
+<!-- Encrypted Drive -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">add_to_drive</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Drive</span>
+</button>
+<!-- Offline Bluetooth -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">bluetooth</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Bluetooth</span>
+</button>
+<!-- Telegram Private -->
+<button class="flex flex-col items-center space-y-1.5 shrink-0 group focus:outline-none" type="button">
+<div class="w-13 h-13 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-on-primary-fixed transition-colors shadow-xs">
+<span class="material-symbols-outlined text-[24px]">send</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface text-center">Telegram</span>
+</button>
+</div>
+</div>
+<!-- Primary Bottom Action Triggers -->
+<div class="flex flex-col space-y-3 pt-2">
+<button class="w-full h-14 bg-primary text-on-primary rounded-2xl font-title-sm text-title-sm font-semibold flex items-center justify-center space-x-2.5 shadow-md active:scale-[0.98] transition-transform duration-150 hover:bg-primary-container" type="button">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">enhanced_encryption</span>
+<span>Share Encrypted Document</span>
+</button>
+<button class="w-full h-12 bg-surface-container text-on-surface rounded-2xl font-title-sm text-title-sm font-semibold flex items-center justify-center space-x-2 active:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">archive</span>
+<span>Save to Local Vault</span>
+</button>
+<!-- Privacy Airgap Guarantee Callout -->
+<div class="flex items-center justify-center space-x-1.5 pt-1 text-center">
+<span class="material-symbols-outlined text-[16px] text-tertiary" style="font-variation-settings: 'FILL' 1;">gpp_good</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant font-medium">
+        Zero-cloud transmission • Processed 100% locally on this device
+      </p>
+</div>
+</div>
+</div>
+<script>
+  function selectFormat(selectedCard) {
+    const cards = document.querySelectorAll('.format-card');
+    cards.forEach(card => {
+      card.className = 'format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-surface-container-low text-on-surface hover:bg-surface-container';
+      const icon = card.querySelector('.status-indicator');
+      icon.className = 'status-indicator material-symbols-outlined text-[20px] text-outline-variant';
+      icon.textContent = 'radio_button_unchecked';
+      const iconWrap = card.querySelector('.rounded-xl');
+      iconWrap.className = 'w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary';
+    });
+
+    selectedCard.className = 'format-card relative text-left p-3 rounded-2xl transition-all duration-200 bg-primary-container text-on-primary-container shadow-md';
+    const activeIcon = selectedCard.querySelector('.status-indicator');
+    activeIcon.className = 'status-indicator material-symbols-outlined text-[20px] text-on-primary-container';
+    activeIcon.textContent = 'check_circle';
+    const activeIconWrap = selectedCard.querySelector('.rounded-xl');
+    activeIconWrap.className = 'w-8 h-8 rounded-xl bg-on-primary-container/15 flex items-center justify-center';
+  }
+
+  function setCompression(btn, size, reduction) {
+    const buttons = document.querySelectorAll('.compression-btn');
+    buttons.forEach(b => {
+      b.className = 'compression-btn py-2 px-1 rounded-lg text-center transition-all duration-150 text-on-surface-variant';
+      const p1 = b.children[0];
+      const p2 = b.children[1];
+      p1.className = 'font-label-md text-label-md font-semibold truncate';
+      p2.className = 'font-body-sm text-[10px] text-on-surface-variant';
+    });
+
+    btn.className = 'compression-btn py-2 px-1 rounded-lg text-center transition-all duration-150 bg-surface-container-lowest text-primary shadow-xs';
+    btn.children[0].className = 'font-label-md text-label-md font-bold truncate';
+    btn.children[1].className = 'font-body-sm text-[10px] text-primary font-semibold';
+
+    const badge = document.getElementById('compression-badge');
+    badge.textContent = reduction;
+  }
+
+  function toggleSwitch(button, targetId) {
+    const isChecked = button.getAttribute('aria-checked') === 'true';
+    const nextState = !isChecked;
+    button.setAttribute('aria-checked', String(nextState));
+
+    const thumb = button.querySelector('span');
+
+    if (nextState) {
+      button.className = 'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-primary';
+      thumb.className = 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-5 flex items-center justify-center';
+      thumb.innerHTML = '<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: \'FILL\' 1;">check</span>';
+    } else {
+      button.className = 'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out bg-surface-container-high';
+      thumb.className = 'pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out translate-x-0 flex items-center justify-center';
+      thumb.innerHTML = '<span class="material-symbols-outlined text-[14px] text-outline-variant">close</span>';
+    }
+
+    if (targetId) {
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        if (nextState) {
+          targetEl.classList.remove('hidden');
+        } else {
+          targetEl.classList.add('hidden');
+        }
+      }
+    }
+  }
+
+  function togglePasswordVisibility() {
+    const input = document.getElementById('password-input');
+    const icon = document.getElementById('pwd-eye-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = 'visibility';
+    } else {
+      input.type = 'password';
+      icon.textContent = 'visibility_off';
+    }
+  }
+</script></main></section></body></html>

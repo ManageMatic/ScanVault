@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>ScanVault</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100vh; } body { overscroll-behavior-y: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "secondary-fixed-dim": "#ffb95f", "on-primary-fixed": "#00201d", "surface": "#f9f9ff", "on-primary-container": "#f4fffc", "on-surface-variant": "#3d4947", "tertiary-fixed": "#9cf2e8", "outline-variant": "#bcc9c6", "secondary-fixed": "#ffddb8", "tertiary-fixed-dim": "#80d5cb", "outline": "#6d7a77", "on-primary": "#ffffff", "on-surface": "#111c2d", "primary": "#00685f", "secondary": "#855300", "on-error-container": "#93000a", "primary-fixed-dim": "#6bd8cb", "on-secondary-fixed-variant": "#653e00", "surface-container-high": "#dee8ff", "error": "#ba1a1a", "inverse-surface": "#263143", "surface-container-low": "#f0f3ff", "background": "#f9f9ff", "surface-container-highest": "#d8e3fb", "primary-container": "#008378", "surface-variant": "#d8e3fb", "on-secondary-fixed": "#2a1700", "tertiary-container": "#248279", "on-primary-fixed-variant": "#005049", "on-background": "#111c2d", "inverse-primary": "#6bd8cb", "tertiary": "#006860", "on-secondary": "#ffffff", "surface-container-lowest": "#ffffff", "on-tertiary-container": "#f3fffc", "inverse-on-surface": "#ecf1ff", "primary-fixed": "#89f5e7", "surface-dim": "#cfdaf2", "surface-bright": "#f9f9ff", "surface-tint": "#006a61", "on-tertiary-fixed-variant": "#00504a", "error-container": "#ffdad6", "on-tertiary-fixed": "#00201d", "surface-container": "#e7eeff", "on-tertiary": "#ffffff", "secondary-container": "#fea619", "on-error": "#ffffff", "on-secondary-container": "#684000" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "gutter": "1rem", "margin-tablet": "2rem", "space-lg": "1.5rem", "gutter-tablet": "1.5rem", "margin": "1rem", "space-xs": "0.25rem", "space-md": "1rem", "space-xl": "2rem", "space-sm": "0.5rem" }, fontFamily: { "title-lg": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"] }, fontSize: { "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "title-sm": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "display-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0"><img alt="Brand logo. - Primary color: #0d9488
+- Font: plusJakartaSans
+- Mode: light
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQH_mDSEQho6Tzfs0VhmRf58Aydegs1Irde4ZslZjEVlBZ-el5kD9GDjDAVpkU3UNKsR4ZR0bGiMd9MrsGCAwhic0XlIXFAZnBfEoGHBUeD-Qpomno5U68ksSU-NBXPEUJimOrRhJEhxcyh3_vBBVemB883-Ausntzj2g2c-WGKBBDGz4FSchlEXX-QULtoI8NhDGB-gfnOB9puKpdvVmOoVXbAKRdpZdfrnCpyz01iWcRtT_pwF70"/><div class="flex flex-col min-w-0"><span class="font-label-sm text-label-sm text-primary tracking-wider uppercase truncate">ScanVault</span><h1 class="font-title-lg text-title-lg text-on-surface truncate">Tools</h1></div></div><div class="flex items-center gap-space-xs shrink-0"><button aria-label="Search documents" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors" type="button"><span class="material-symbols-outlined">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface"><div class="flex flex-col w-full">
+<div class="px-margin pt-space-sm pb-space-xs">
+<div class="flex items-center justify-between gap-space-sm bg-surface-container-low px-space-md py-space-xs rounded-full shadow-sm">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse shrink-0"></span>
+<span class="font-label-sm text-label-sm text-primary truncate font-semibold">Offline Engine</span>
+<span class="text-outline-variant text-[10px]">•</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">100% On-Device</span>
+</div>
+<div class="flex items-center gap-1 text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="font-label-sm text-label-sm font-bold">Zero Telemetry</span>
+</div>
+</div>
+</div>
+<div class="px-margin pt-space-xs pb-space-sm">
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-tertiary text-on-primary p-space-md shadow-md">
+<div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-primary-fixed/10 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex items-start gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-on-primary/15 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner">
+<span class="material-symbols-outlined text-primary-fixed text-[28px]">shield_with_heart</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wider">Local Only</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed font-medium">Native Sandbox</span>
+</div>
+<h2 class="font-title-md text-title-md text-on-primary leading-snug">13 Pro Utilities • Free Forever</h2>
+<p class="font-body-sm text-body-sm text-on-primary-container/90 mt-0.5">Zero cloud uploads. All cryptographic operations, OCR analysis, and image rendering run locally.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="py-space-xs">
+<div class="px-margin mb-1.5 flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Recently Used</span>
+<button class="font-label-sm text-label-sm text-primary font-semibold hover:underline" type="button">Clear</button>
+</div>
+<div class="flex items-center gap-space-sm overflow-x-auto px-margin pb-space-xs no-scrollbar">
+<button class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm hover:bg-surface-container transition-colors shrink-0 active:scale-98" type="button">
+<div class="w-6 h-6 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">call_merge</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Merge (Yesterday)</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm hover:bg-surface-container transition-colors shrink-0 active:scale-98" type="button">
+<div class="w-6 h-6 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[16px]">zoom_in_map</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Compress (~68% saved)</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+</button>
+<button class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm hover:bg-surface-container transition-colors shrink-0 active:scale-98" type="button">
+<div class="w-6 h-6 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[16px]">draw</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Quick Sign</span>
+<span class="material-symbols-outlined text-outline text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="px-margin mt-space-sm mb-space-md">
+<div class="relative flex items-center bg-surface-container-low rounded-xl px-space-md py-2.5 shadow-sm">
+<span class="material-symbols-outlined text-outline mr-2 text-[20px]">search</span>
+<input class="bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none w-full min-w-0" id="toolSearchInput" oninput="filterTools(this.value)" placeholder="Search 13 offline PDF tools..." type="text"/>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-md font-mono">13 tools</span>
+</div>
+</div>
+<div class="px-margin flex flex-col gap-space-lg" id="toolsContainer">
+<section class="flex flex-col gap-space-sm tool-category" data-cat="organize">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-primary rounded-full"></span>
+<h3 class="font-title-md text-title-md text-on-surface">Organize &amp; Modify</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline font-medium">6 Tools</span>
+</div>
+<div class="flex flex-col gap-2.5">
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">call_merge</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Merge PDF</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Combine multiple PDFs into a single continuous file</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">call_split</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Split PDF</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Extract specific pages or burst by intervals</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">zoom_in_map</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Compress PDF</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-label-sm text-label-sm font-bold">Fast</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Reduce file size while preserving high visual legibility</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">rotate_right</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Rotate &amp; Reorder</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Adjust orientation in 90° steps or drag shuffle</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">content_copy</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Extract Pages</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Save selected page selections as a separate document</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-error-container text-error flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">delete_outline</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Delete Pages</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Prune and scrub unwanted pages permanently</p>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-space-sm tool-category" data-cat="conversion">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-tertiary-container rounded-full"></span>
+<h3 class="font-title-md text-title-md text-on-surface">Conversion &amp; Intelligence</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline font-medium">3 Tools</span>
+</div>
+<div class="flex flex-col gap-2.5">
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/15 text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">image</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">PDF → Images</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Export pages to crisp high-res 300 DPI JPG or PNG</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/15 text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">picture_as_pdf</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Images → PDF</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Assemble photos and gallery snapshots into clean document</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer relative overflow-hidden" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[26px]">document_scanner</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">OCR Text Extractor</span>
+<span class="px-1.5 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold tracking-tight">On-Device AI</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Extract machine-encoded copyable text using local neural models</p>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-space-sm tool-category" data-cat="security">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-secondary-container rounded-full"></span>
+<h3 class="font-title-md text-title-md text-on-surface">Security &amp; Signatures</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline font-medium">4 Tools</span>
+</div>
+<div class="flex flex-col gap-2.5">
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">lock</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Protect with PIN</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-medium">AES-256</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Encrypt with military-grade key derivation &amp; permission locks</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">draw</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Add Signature</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Digitally sign using stylus, touch ink, or saved biometric signature</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">branding_watermark</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Watermark</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Imprint custom confidential stamps, logos, or serial badges</p>
+</div>
+</div>
+<div class="tool-card flex items-center gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-xl bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">border_color</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Annotate &amp; Markup</span>
+<span class="material-symbols-outlined text-outline-variant text-[20px] shrink-0">chevron_right</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Highlight clauses, freehand pencil annotations, and adhesive notes</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div class="hidden px-margin py-space-xl text-center flex flex-col items-center" id="noResultsState">
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-outline mb-space-sm">
+<span class="material-symbols-outlined text-[32px]">manage_search</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface">No utility found</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 max-w-xs">Try searching for synonyms like 'convert', 'secure', 'sign', or 'extract'.</p>
+</div>
+<div class="px-margin mt-space-md mb-space-sm">
+<div class="rounded-2xl bg-surface-container-low p-space-md flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">memory</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface">WebAssembly PDF Engine</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Hardware-accelerated processing via SIMD v2.4</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0">check_circle</span>
+</div>
+</div>
+</div>
+<script>
+  function filterTools(query) {
+    const q = (query || '').toLowerCase().trim();
+    const cards = document.querySelectorAll('.tool-card');
+    const categories = document.querySelectorAll('.tool-category');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const text = card.innerText.toLowerCase();
+      if (!q || text.includes(q)) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    categories.forEach(cat => {
+      const visibleInCat = cat.querySelectorAll('.tool-card[style="display: flex;"]');
+      const allInCat = cat.querySelectorAll('.tool-card');
+      const hasVisible = q ? visibleInCat.length > 0 : true;
+      cat.style.display = hasVisible ? 'flex' : 'none';
+    });
+
+    const noResults = document.getElementById('noResultsState');
+    if (noResults) {
+      noResults.style.display = visibleCount === 0 && q ? 'flex' : 'none';
+    }
+  }
+
+  document.querySelectorAll('.tool-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const title = this.querySelector('.font-title-sm')?.innerText || 'Tool';
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-inverse-surface text-inverse-on-surface px-4 py-2.5 rounded-full font-label-md text-label-md shadow-lg flex items-center gap-2 transition-all transform duration-200 ease-out animate-bounce';
+      toast.innerHTML = `<span class="material-symbols-outlined text-[18px] text-primary-fixed">play_circle</span><span>Launching ${title}...</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 1600);
+    });
+  });
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]" data-active-classes="text-primary font-semibold"><div class="relative flex items-center justify-around h-16 px-space-xs"><a class="flex flex-col items-center justify-center w-14 h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="home" href="#"><span class="material-symbols-outlined">home</span><span class="font-label-sm text-label-sm mt-0.5">Home</span></a><a class="flex flex-col items-center justify-center w-14 h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="documents" href="#"><span class="material-symbols-outlined">folder</span><span class="font-label-sm text-label-sm mt-0.5">Docs</span></a><div class="relative -top-5 flex flex-col items-center shrink-0"><a class="w-14 h-14 rounded-2xl bg-primary text-on-primary flex items-center justify-center shadow-[0_10px_15px_-3px_rgba(0,104,95,0.3)] active:scale-95 transition-transform" data-path="camera-scanner" href="#"><span class="material-symbols-outlined text-[28px]">document_scanner</span></a></div><a aria-current="page" class="flex flex-col items-center justify-center w-14 h-full transition-colors text-primary font-semibold" data-path="tools" href="#"><span class="material-symbols-outlined">construction</span><span class="font-label-sm text-label-sm mt-0.5">Tools</span></a><a class="flex flex-col items-center justify-center w-14 h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined">settings</span><span class="font-label-sm text-label-sm mt-0.5">Settings</span></a></div></nav></body></html>
