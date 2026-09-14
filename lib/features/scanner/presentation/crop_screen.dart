@@ -8,13 +8,19 @@ import '../../image_processing/domain/document_detector.dart';
 import '../../image_processing/domain/image_processor.dart';
 import '../domain/scanned_page_item.dart';
 
+import 'package:path/path.dart' as p;
+import '../../../core/storage/page_image_resolver.dart';
+import '../../../core/storage/session_workspace_manager.dart';
+
 /// Quadrilateral crop and perspective screen conforming to Google Stitch specifications.
 class CropScreen extends StatefulWidget {
   final ScannedPageItem page;
+  final String userId;
 
   const CropScreen({
     super.key,
     required this.page,
+    this.userId = 'local_user',
   });
 
   @override
@@ -32,9 +38,11 @@ class _CropScreenState extends State<CropScreen> {
   Uint8List? _imageBytes;
   bool _isLoading = true;
   bool _isDetecting = false;
+  bool _isApplyingCrop = false;
   int _rotationDegrees = 0;
   Size _imageDisplaySize = Size.zero;
   DocumentDetectionResult? _detectionResult;
+  final SessionWorkspaceManager _workspaceManager = SessionWorkspaceManager();
 
   @override
   void initState() {
@@ -45,13 +53,16 @@ class _CropScreenState extends State<CropScreen> {
 
   Future<void> _loadImageAndDetect() async {
     try {
-      if (widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
-        _imageBytes = widget.page.cachedProcessedBytes;
-      } else {
-        final file = File(widget.page.originalImagePath);
-        if (await file.exists()) {
+      final bestPath = PageImageResolver.resolveCurrentImagePath(widget.page);
+      if (bestPath != null) {
+        final file = File(bestPath);
+        if (await file.exists() && await file.length() > 0) {
           _imageBytes = await file.readAsBytes();
         }
+      }
+
+      if (_imageBytes == null && widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
+        _imageBytes = widget.page.cachedProcessedBytes;
       }
 
       if (_imageBytes != null) {
@@ -142,11 +153,14 @@ class _CropScreenState extends State<CropScreen> {
     });
   }
 
-  void _applyCrop() {
+  Future<void> _applyCrop() async {
     if (_imageBytes == null) {
       Navigator.of(context).pop(widget.page);
       return;
     }
+
+    setState(() => _isApplyingCrop = true);
+    await Future.delayed(const Duration(milliseconds: 60));
 
     final croppedBytes = ImageProcessor.cropQuadrilateral(
       rawBytes: _imageBytes!,
@@ -158,7 +172,24 @@ class _CropScreenState extends State<CropScreen> {
       displayHeight: 1.0,
     );
 
+    // Save working image to disk in stable session workspace
+    String? workingPath;
+    String? thumbPath;
+    try {
+      workingPath = await _workspaceManager.saveWorkingImage(
+        userId: widget.userId,
+        sessionId: widget.page.sessionId,
+        pageId: widget.page.id,
+        bytes: croppedBytes,
+      );
+      thumbPath = p.join(p.dirname(workingPath), 'thumbnail.jpg');
+    } catch (e) {
+      debugPrint('[ScanVault][Crop] Error saving working image: $e');
+    }
+
     final updated = widget.page.copyWith(
+      workingImagePath: workingPath,
+      thumbnailPath: thumbPath ?? widget.page.thumbnailPath,
       cachedProcessedBytes: croppedBytes,
       cropTopLeft: _normTopLeft,
       cropTopRight: _normTopRight,
@@ -169,7 +200,9 @@ class _CropScreenState extends State<CropScreen> {
       enhancementParams: widget.page.enhancementParams.copyWith(rotationDegrees: _rotationDegrees),
     );
 
-    Navigator.of(context).pop(updated);
+    if (mounted) {
+      Navigator.of(context).pop(updated);
+    }
   }
 
   @override
@@ -209,194 +242,231 @@ class _CropScreenState extends State<CropScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : Column(
+          : Stack(
               children: [
-                // Detection Confidence Status Pill
-                if (_detectionResult != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 6, bottom: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _detectionResult!.confidenceLevel == DetectionConfidence.high
-                          ? AppColors.primary.withValues(alpha: 0.2)
-                          : Colors.white12,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _detectionResult!.confidenceLevel == DetectionConfidence.high
-                            ? AppColors.primary
-                            : Colors.white24,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _detectionResult!.confidenceLevel == DetectionConfidence.high
-                              ? Icons.check_circle_outline_rounded
-                              : Icons.tune_rounded,
-                          size: 14,
+                Column(
+                  children: [
+                    // Detection Confidence Status Pill
+                    if (_detectionResult != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 6, bottom: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
                           color: _detectionResult!.confidenceLevel == DetectionConfidence.high
-                              ? AppColors.primaryFixed
-                              : Colors.white70,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _detectionResult!.confidenceLevel == DetectionConfidence.high
-                              ? 'Auto-detected Boundary'
-                              : 'Adjust Corners Manually',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: Colors.white,
-                            fontSize: 11,
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : Colors.white12,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _detectionResult!.confidenceLevel == DetectionConfidence.high
+                                ? AppColors.primary
+                                : Colors.white24,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final imgW = constraints.maxWidth;
-                          final imgH = constraints.maxHeight;
-
-                          if (imgW > 0 && imgH > 0) {
-                            _imageDisplaySize = Size(imgW, imgH);
-                          }
-
-                          // Denormalize points to current render box constraints
-                          final screenTl = math.Point(_normTopLeft.x * imgW, _normTopLeft.y * imgH);
-                          final screenTr = math.Point(_normTopRight.x * imgW, _normTopRight.y * imgH);
-                          final screenBr = math.Point(_normBottomRight.x * imgW, _normBottomRight.y * imgH);
-                          final screenBl = math.Point(_normBottomLeft.x * imgW, _normBottomLeft.y * imgH);
-
-                          return SizedBox(
-                            width: imgW,
-                            height: imgH,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Background Image
-                                Positioned.fill(
-                                  child: RotatedBox(
-                                    quarterTurns: _rotationDegrees ~/ 90,
-                                    child: _imageBytes != null
-                                        ? Image.memory(
-                                            _imageBytes!,
-                                            fit: BoxFit.contain,
-                                            gaplessPlayback: true,
-                                            filterQuality: FilterQuality.medium,
-                                          )
-                                        : Container(color: Colors.grey.shade900),
-                                  ),
-                                ),
-
-                                // Interactive Quadrilateral Mask and Draggable Handles
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    onPanDown: (details) {
-                                      _activeCorner = _findNearestCorner(
-                                        details.localPosition,
-                                        screenTl,
-                                        screenTr,
-                                        screenBr,
-                                        screenBl,
-                                      );
-                                    },
-                                    onPanUpdate: (details) {
-                                      if (_activeCorner >= 0 && imgW > 0 && imgH > 0) {
-                                        setState(() {
-                                          final pos = details.localPosition;
-                                          final clampedNormX = (pos.dx / imgW).clamp(0.0, 1.0);
-                                          final clampedNormY = (pos.dy / imgH).clamp(0.0, 1.0);
-                                          final newNormPt = math.Point(clampedNormX, clampedNormY);
-
-                                          switch (_activeCorner) {
-                                            case 0:
-                                              _normTopLeft = newNormPt;
-                                              break;
-                                            case 1:
-                                              _normTopRight = newNormPt;
-                                              break;
-                                            case 2:
-                                              _normBottomRight = newNormPt;
-                                              break;
-                                            case 3:
-                                              _normBottomLeft = newNormPt;
-                                              break;
-                                          }
-                                        });
-                                      }
-                                    },
-                                    onPanEnd: (_) => _activeCorner = -1,
-                                    child: CustomPaint(
-                                      painter: _CropOverlayPainter(
-                                        topLeft: screenTl,
-                                        topRight: screenTr,
-                                        bottomRight: screenBr,
-                                        bottomLeft: screenBl,
-                                        activeCorner: _activeCorner,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                if (_isDetecting)
-                                  Positioned.fill(
-                                    child: Container(
-                                      color: Colors.black45,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(color: AppColors.primary),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _detectionResult!.confidenceLevel == DetectionConfidence.high
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.tune_rounded,
+                              size: 14,
+                              color: _detectionResult!.confidenceLevel == DetectionConfidence.high
+                                  ? AppColors.primaryFixed
+                                  : Colors.white70,
                             ),
-                          );
-                        },
+                            const SizedBox(width: 6),
+                            Text(
+                              _detectionResult!.confidenceLevel == DetectionConfidence.high
+                                  ? 'Auto-detected Boundary'
+                                  : 'Adjust Corners Manually',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final imgW = constraints.maxWidth;
+                              final imgH = constraints.maxHeight;
+
+                              if (imgW > 0 && imgH > 0) {
+                                _imageDisplaySize = Size(imgW, imgH);
+                              }
+
+                              // Denormalize points to current render box constraints
+                              final screenTl = math.Point(_normTopLeft.x * imgW, _normTopLeft.y * imgH);
+                              final screenTr = math.Point(_normTopRight.x * imgW, _normTopRight.y * imgH);
+                              final screenBr = math.Point(_normBottomRight.x * imgW, _normBottomRight.y * imgH);
+                              final screenBl = math.Point(_normBottomLeft.x * imgW, _normBottomLeft.y * imgH);
+
+                              return SizedBox(
+                                width: imgW,
+                                height: imgH,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // Background Image
+                                    Positioned.fill(
+                                      child: RotatedBox(
+                                        quarterTurns: _rotationDegrees ~/ 90,
+                                        child: _imageBytes != null
+                                            ? Image.memory(
+                                                _imageBytes!,
+                                                fit: BoxFit.contain,
+                                                cacheWidth: 1200,
+                                                gaplessPlayback: true,
+                                                filterQuality: FilterQuality.medium,
+                                              )
+                                            : Container(color: Colors.grey.shade900),
+                                      ),
+                                    ),
+
+                                    // Interactive Quadrilateral Mask and Draggable Handles
+                                    Positioned.fill(
+                                      child: GestureDetector(
+                                        onPanDown: (details) {
+                                          _activeCorner = _findNearestCorner(
+                                            details.localPosition,
+                                            screenTl,
+                                            screenTr,
+                                            screenBr,
+                                            screenBl,
+                                          );
+                                        },
+                                        onPanUpdate: (details) {
+                                          if (_activeCorner >= 0 && imgW > 0 && imgH > 0) {
+                                            setState(() {
+                                              final pos = details.localPosition;
+                                              final clampedNormX = (pos.dx / imgW).clamp(0.0, 1.0);
+                                              final clampedNormY = (pos.dy / imgH).clamp(0.0, 1.0);
+                                              final newNormPt = math.Point(clampedNormX, clampedNormY);
+
+                                              switch (_activeCorner) {
+                                                case 0:
+                                                  _normTopLeft = newNormPt;
+                                                  break;
+                                                case 1:
+                                                  _normTopRight = newNormPt;
+                                                  break;
+                                                case 2:
+                                                  _normBottomRight = newNormPt;
+                                                  break;
+                                                case 3:
+                                                  _normBottomLeft = newNormPt;
+                                                  break;
+                                              }
+                                            });
+                                          }
+                                        },
+                                        onPanEnd: (_) => setState(() => _activeCorner = -1),
+                                        child: CustomPaint(
+                                          painter: _CropOverlayPainter(
+                                            topLeft: screenTl,
+                                            topRight: screenTr,
+                                            bottomRight: screenBr,
+                                            bottomLeft: screenBl,
+                                            activeCorner: _activeCorner,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    if (_isDetecting)
+                                      Positioned.fill(
+                                        child: Container(
+                                          color: Colors.black45,
+                                          child: const Center(
+                                            child: CircularProgressIndicator(color: AppColors.primary),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Bottom Action Bar
+                    Container(
+                      height: 72,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      color: const Color(0xFF14191E),
+                      child: SafeArea(
+                        top: false,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                              label: Text(
+                                'Cancel',
+                                style: AppTypography.labelLarge.copyWith(color: Colors.white70),
+                              ),
+                            ),
+                            FilledButton.icon(
+                              onPressed: _isApplyingCrop ? null : _applyCrop,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.check_rounded, color: Colors.white),
+                              label: Text(
+                                'Apply Crop',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isApplyingCrop)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E242B),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Applying Perspective Crop...',
+                                style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-
-                // Bottom Action Toolbar
-                Container(
-                  color: const Color(0xFF14191E),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  child: SafeArea(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                          label: Text(
-                            'Cancel',
-                            style: AppTypography.labelLarge.copyWith(color: Colors.white70),
-                          ),
-                        ),
-                        FilledButton.icon(
-                          onPressed: _applyCrop,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.check_rounded, color: Colors.white),
-                          label: Text(
-                            'Apply Crop',
-                            style: AppTypography.labelLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
     );

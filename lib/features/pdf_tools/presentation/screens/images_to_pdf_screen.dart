@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:scanvault/core/constants/app_colors.dart';
 import 'package:scanvault/core/constants/app_typography.dart';
 import 'package:scanvault/features/pdf_creation/domain/pdf_models.dart';
@@ -8,6 +7,7 @@ import 'package:scanvault/features/pdf_tools/data/repositories/local_pdf_tools_r
 import 'package:scanvault/features/pdf_tools/domain/entities/pdf_processing_progress.dart';
 import 'package:scanvault/features/pdf_tools/domain/repositories/pdf_tools_repository.dart';
 import 'package:scanvault/features/pdf_tools/presentation/screens/pdf_tool_result_screen.dart';
+import 'package:scanvault/features/pdf_tools/presentation/widgets/pdf_document_picker_sheet.dart';
 import 'package:scanvault/features/pdf_tools/presentation/widgets/tool_progress_modal.dart';
 import 'package:scanvault/shared/models/document.dart';
 
@@ -38,11 +38,19 @@ class _ImagesToPdfScreenState extends State<ImagesToPdfScreen> {
   }
 
   Future<void> _pickImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage();
-    if (picked.isNotEmpty) {
+    final picked = await PdfDocumentPickerSheet.show(
+      context,
+      title: 'Select Images',
+      allowMultiple: true,
+      allowImagePicker: true,
+    );
+    if (picked != null && picked.isNotEmpty) {
       setState(() {
-        _imageFiles.addAll(picked.map((x) => File(x.path)));
+        for (final f in picked) {
+          if (!_imageFiles.any((existing) => existing.path == f.path)) {
+            _imageFiles.add(f);
+          }
+        }
       });
     }
   }

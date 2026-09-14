@@ -1,18 +1,22 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/storage/session_workspace_manager.dart';
 import '../../image_processing/domain/image_processor.dart';
 import '../domain/scanned_page_item.dart';
 
 /// Document Enhancement, Shadow Removal, and Color Filter screen conforming to Stitch specifications.
 class EnhancementScreen extends StatefulWidget {
   final ScannedPageItem page;
+  final String userId;
 
   const EnhancementScreen({
     super.key,
     required this.page,
+    this.userId = 'local_user',
   });
 
   @override
@@ -29,6 +33,8 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
   Uint8List? _previewBytes;
   bool _isLoading = true;
   bool _isProcessing = false;
+  bool _isSaving = false;
+  final SessionWorkspaceManager _workspaceManager = SessionWorkspaceManager();
 
   @override
   void initState() {
@@ -43,14 +49,23 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
   Future<void> _loadAndProcess() async {
     try {
-      if (widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
-        _rawBytes = widget.page.cachedProcessedBytes;
-      } else {
-        final f = File(widget.page.originalImagePath);
-        if (await f.exists()) {
+      // Priority: working image (crop) -> original image
+      String? basePath = widget.page.workingImagePath;
+      if (basePath == null || basePath.isEmpty || !File(basePath).existsSync()) {
+        basePath = widget.page.originalImagePath;
+      }
+
+      if (basePath.isNotEmpty) {
+        final f = File(basePath);
+        if (await f.exists() && await f.length() > 0) {
           _rawBytes = await f.readAsBytes();
         }
       }
+
+      if (_rawBytes == null && widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
+        _rawBytes = widget.page.cachedProcessedBytes;
+      }
+
       if (_rawBytes != null) {
         _previewBytes = _rawBytes;
         if (mounted) setState(() => _isLoading = false);
@@ -89,7 +104,7 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
   void _resetToDefaults() {
     setState(() {
-      _selectedFilter = ScanFilterMode.documentClean;
+      _selectedFilter = ScanFilterMode.original;
       _brightness = 0.0;
       _contrast = 1.0;
       _shadowRemoval = 0.0;
@@ -97,11 +112,14 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
     _updatePreview();
   }
 
-  void _saveAndApply() {
-    if (_previewBytes == null) {
+  Future<void> _saveAndApply() async {
+    if (_rawBytes == null) {
       Navigator.of(context).pop(widget.page);
       return;
     }
+
+    setState(() => _isSaving = true);
+    await Future.delayed(const Duration(milliseconds: 60));
 
     final newParams = ImageEnhancementParams(
       filterMode: _selectedFilter,
@@ -117,12 +135,31 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       params: newParams,
     );
 
+    // Save processed image to disk in stable session workspace
+    String? processedPath;
+    String? thumbPath;
+    try {
+      processedPath = await _workspaceManager.saveProcessedImage(
+        userId: widget.userId,
+        sessionId: widget.page.sessionId,
+        pageId: widget.page.id,
+        bytes: finalProcessed,
+      );
+      thumbPath = p.join(p.dirname(processedPath), 'thumbnail.jpg');
+    } catch (e) {
+      debugPrint('[ScanVault][Enhance] Error saving processed image: $e');
+    }
+
     final updated = widget.page.copyWith(
+      processedImagePath: processedPath,
+      thumbnailPath: thumbPath ?? widget.page.thumbnailPath,
       cachedProcessedBytes: finalProcessed,
       enhancementParams: newParams,
     );
 
-    Navigator.of(context).pop(updated);
+    if (mounted) {
+      Navigator.of(context).pop(updated);
+    }
   }
 
   @override
@@ -158,142 +195,177 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : Column(
+          : Stack(
               children: [
-                // Main Preview
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A222B),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
+                Column(
+                  children: [
+                    // Main Preview
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1A222B),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: _previewBytes != null
+                                ? Image.memory(
+                                    _previewBytes!,
+                                    key: ValueKey('preview_${_selectedFilter}_${_brightness}_${_contrast}_$_shadowRemoval'),
+                                    fit: BoxFit.contain,
+                                    cacheWidth: 1200,
+                                    gaplessPlayback: true,
+                                    filterQuality: FilterQuality.medium,
+                                  )
+                                : Container(color: Colors.grey.shade900),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Fine Tuning Sliders
+                    Container(
+                      color: const Color(0xFF161C23),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        children: [
+                          // Brightness Slider
+                          _buildSliderRow(
+                            icon: Icons.brightness_6_rounded,
+                            label: 'Brightness',
+                            value: _brightness,
+                            min: -0.5,
+                            max: 0.5,
+                            displayVal: '${(_brightness * 100).toInt()}%',
+                            onChanged: (val) {
+                              setState(() => _brightness = val);
+                              _updatePreview();
+                            },
+                          ),
+                          // Contrast Slider
+                          _buildSliderRow(
+                            icon: Icons.contrast_rounded,
+                            label: 'Contrast',
+                            value: _contrast,
+                            min: 0.5,
+                            max: 1.8,
+                            displayVal: '${(_contrast * 100).toInt()}%',
+                            onChanged: (val) {
+                              setState(() => _contrast = val);
+                              _updatePreview();
+                            },
+                          ),
+                          // Shadow Removal Slider
+                          _buildSliderRow(
+                            icon: Icons.wb_shade_rounded,
+                            label: 'Shadows',
+                            value: _shadowRemoval,
+                            min: 0.0,
+                            max: 1.0,
+                            displayVal: '${(_shadowRemoval * 100).toInt()}%',
+                            onChanged: (val) {
+                              setState(() => _shadowRemoval = val);
+                              _updatePreview();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Filter Selection Pills Ribbon
+                    Container(
+                      height: 80,
+                      color: const Color(0xFF161C23),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        children: [
+                          _buildFilterCard(ScanFilterMode.original, 'Original', Icons.image_outlined),
+                          _buildFilterCard(ScanFilterMode.auto, 'Auto', Icons.auto_awesome_rounded),
+                          _buildFilterCard(ScanFilterMode.documentClean, 'Doc Clean', Icons.document_scanner_rounded),
+                          _buildFilterCard(ScanFilterMode.magicColor, 'Magic Color', Icons.palette_rounded),
+                          _buildFilterCard(ScanFilterMode.grayscale, 'Grayscale', Icons.filter_b_and_w_rounded),
+                          _buildFilterCard(ScanFilterMode.blackAndWhite, 'B&W Text', Icons.contrast_rounded),
+                        ],
+                      ),
+                    ),
+
+                    // Bottom Action Toolbar
+                    Container(
+                      color: const Color(0xFF14191E),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      child: SafeArea(
+                        top: false,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                              label: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: Colors.white70)),
+                            ),
+                            FilledButton.icon(
+                              onPressed: (_isProcessing || _isSaving) ? null : _saveAndApply,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.check_rounded, color: Colors.white),
+                              label: Text(
+                                'Apply Filter',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _previewBytes != null
-                            ? Image.memory(
-                                _previewBytes!,
-                                key: ValueKey('preview_${_selectedFilter}_${_brightness}_${_contrast}_$_shadowRemoval'),
-                                fit: BoxFit.contain,
-                                gaplessPlayback: true,
-                                filterQuality: FilterQuality.medium,
-                              )
-                            : Container(color: Colors.grey.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isSaving)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E242B),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Applying Filter & Saving...',
+                                style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-
-                // Fine Tuning Sliders
-                Container(
-                  color: const Color(0xFF161C23),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    children: [
-                      // Brightness Slider
-                      _buildSliderRow(
-                        icon: Icons.brightness_6_rounded,
-                        label: 'Brightness',
-                        value: _brightness,
-                        min: -0.5,
-                        max: 0.5,
-                        displayVal: '${(_brightness * 100).toInt()}%',
-                        onChanged: (val) {
-                          setState(() => _brightness = val);
-                          _updatePreview();
-                        },
-                      ),
-                      // Contrast Slider
-                      _buildSliderRow(
-                        icon: Icons.contrast_rounded,
-                        label: 'Contrast',
-                        value: _contrast,
-                        min: 0.5,
-                        max: 1.5,
-                        displayVal: '${(_contrast * 100).toInt()}%',
-                        onChanged: (val) {
-                          setState(() => _contrast = val);
-                          _updatePreview();
-                        },
-                      ),
-                      // Shadow Removal Slider
-                      _buildSliderRow(
-                        icon: Icons.wb_sunny_rounded,
-                        label: 'Shadows',
-                        value: _shadowRemoval,
-                        min: 0.0,
-                        max: 1.0,
-                        displayVal: '${(_shadowRemoval * 100).toInt()}%',
-                        onChanged: (val) {
-                          setState(() => _shadowRemoval = val);
-                          _updatePreview();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Filter Modes Selector
-                Container(
-                  height: 88,
-                  color: const Color(0xFF131820),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    children: [
-                      _buildFilterCard(ScanFilterMode.documentClean, 'Clean', Icons.auto_fix_high_rounded),
-                      _buildFilterCard(ScanFilterMode.auto, 'Auto', Icons.hdr_auto_rounded),
-                      _buildFilterCard(ScanFilterMode.magicColor, 'Magic Color', Icons.color_lens_rounded),
-                      _buildFilterCard(ScanFilterMode.blackAndWhite, 'B&W Text', Icons.text_snippet_rounded),
-                      _buildFilterCard(ScanFilterMode.grayscale, 'Grayscale', Icons.filter_b_and_w_rounded),
-                      _buildFilterCard(ScanFilterMode.original, 'Original', Icons.photo_camera_rounded),
-                    ],
-                  ),
-                ),
-
-                // Bottom Action Buttons
-                Container(
-                  color: const Color(0xFF101418),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  child: SafeArea(
-                    top: false,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                          label: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: Colors.white70)),
-                        ),
-                        FilledButton.icon(
-                          onPressed: _isProcessing ? null : _saveAndApply,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          icon: const Icon(Icons.check_rounded, color: Colors.white),
-                          label: Text(
-                            'Apply Filter',
-                            style: AppTypography.labelLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
     );

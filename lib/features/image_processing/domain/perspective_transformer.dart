@@ -47,8 +47,8 @@ class PerspectiveTransformer {
     final targetW = (rawTargetWidth * scale).round().clamp(100, 4000);
     final targetH = (rawTargetHeight * scale).round().clamp(100, 4000);
 
-    // 3. Perform Bilinear Inverse Quadrilateral Warping
-    final outImg = img.Image(width: targetW, height: targetH, numChannels: srcImg.numChannels);
+    // 3. Perform Bilinear Inverse Quadrilateral Warping (RGB 3 channels for clean JPEG encoding)
+    final outImg = img.Image(width: targetW, height: targetH, numChannels: 3);
 
     for (var y = 0; y < targetH; y++) {
       final v = y / (targetH - 1.0);

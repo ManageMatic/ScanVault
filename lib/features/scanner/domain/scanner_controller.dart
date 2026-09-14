@@ -2,16 +2,19 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/storage/session_workspace_manager.dart';
 import '../../../shared/models/scan_session.dart';
 import '../../image_processing/domain/image_processor.dart';
 import 'scanned_page_item.dart';
 
 /// Comprehensive controller managing real camera viewfinder, capture pipeline, and session pages.
 class ScannerController extends ChangeNotifier {
+  final String userId;
+  final SessionWorkspaceManager _workspaceManager;
+  late String _sessionId;
+
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   int _selectedCameraIndex = 0;
@@ -24,6 +27,14 @@ class ScannerController extends ChangeNotifier {
   final List<ScannedPageItem> _pages = [];
   final ImagePicker _picker = ImagePicker();
 
+  ScannerController({
+    this.userId = 'local_user',
+    SessionWorkspaceManager? workspaceManager,
+  })  : _workspaceManager = workspaceManager ?? SessionWorkspaceManager() {
+    _sessionId = const Uuid().v4();
+  }
+
+  String get sessionId => _sessionId;
   CameraController? get cameraController => _cameraController;
   bool get isInitialized => _isInitialized && _cameraController != null && _cameraController!.value.isInitialized;
   bool get isCapturing => _isCapturing;
@@ -101,34 +112,37 @@ class ScannerController extends ChangeNotifier {
     await _initCameraController(_cameras[_selectedCameraIndex]);
   }
 
-  /// Real picture capture from camera sensor
+  /// Real picture capture from camera sensor copied immediately to stable local session storage.
   Future<ScannedPageItem?> capture() async {
     if (_isCapturing) return null;
     _isCapturing = true;
     notifyListeners();
 
     try {
-      String imagePath;
+      final pageId = const Uuid().v4();
       Uint8List imageBytes;
 
       if (_cameraController != null && _cameraController!.value.isInitialized) {
         final xFile = await _cameraController!.takePicture();
-        imagePath = xFile.path;
         imageBytes = await xFile.readAsBytes();
       } else {
-        // Fallback placeholder with valid JPEG image encoding
-        final tempDir = await getTemporaryDirectory();
-        final dummyPath = p.join(tempDir.path, 'scan_${DateTime.now().millisecondsSinceEpoch}.jpg');
-        final dummyFile = File(dummyPath);
-        final dummyImg = ImageProcessor.createSampleDocumentBitmap();
-        await dummyFile.writeAsBytes(dummyImg);
-        imagePath = dummyPath;
-        imageBytes = dummyImg;
+        // Fallback sample bitmap
+        imageBytes = ImageProcessor.createSampleDocumentBitmap();
       }
 
+      // Save stable copy to ScanVault session workspace
+      final imported = await _workspaceManager.importSourceImage(
+        userId: userId,
+        sessionId: _sessionId,
+        pageId: pageId,
+        rawBytes: imageBytes,
+      );
+
       final page = ScannedPageItem(
-        id: const Uuid().v4(),
-        originalImagePath: imagePath,
+        id: pageId,
+        sessionId: _sessionId,
+        originalImagePath: imported['originalPath']!,
+        thumbnailPath: imported['thumbnailPath'],
         cachedProcessedBytes: imageBytes,
         capturedAt: DateTime.now(),
       );
@@ -151,7 +165,7 @@ class ScannerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Import photos from phone gallery
+  /// Import photos from phone gallery, copied immediately to stable local session storage.
   Future<List<ScannedPageItem>> importFromGallery() async {
     try {
       List<XFile> images = [];
@@ -174,24 +188,25 @@ class ScannerController extends ChangeNotifier {
 
       if (images.isEmpty) return [];
 
-      final tempDir = await getTemporaryDirectory();
       final addedPages = <ScannedPageItem>[];
 
       for (final img in images) {
         final bytes = await img.readAsBytes();
         if (bytes.isEmpty) continue;
 
-        // Persist to local application temporary storage with flush
-        final localPath = p.join(
-          tempDir.path,
-          'imported_${DateTime.now().millisecondsSinceEpoch}_${const Uuid().v4().substring(0, 8)}.jpg',
+        final pageId = const Uuid().v4();
+        final imported = await _workspaceManager.importSourceImage(
+          userId: userId,
+          sessionId: _sessionId,
+          pageId: pageId,
+          rawBytes: bytes,
         );
-        final localFile = File(localPath);
-        await localFile.writeAsBytes(bytes, flush: true);
 
         final page = ScannedPageItem(
-          id: const Uuid().v4(),
-          originalImagePath: localPath,
+          id: pageId,
+          sessionId: _sessionId,
+          originalImagePath: imported['originalPath']!,
+          thumbnailPath: imported['thumbnailPath'],
           cachedProcessedBytes: bytes,
           capturedAt: DateTime.now(),
         );
@@ -240,7 +255,9 @@ class ScannerController extends ChangeNotifier {
   }
 
   void clearSession() {
+    _workspaceManager.cleanupSession(userId, _sessionId);
     _pages.clear();
+    _sessionId = const Uuid().v4();
     notifyListeners();
   }
 

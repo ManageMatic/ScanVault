@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:scanvault/core/constants/app_colors.dart';
 import 'package:scanvault/core/constants/app_typography.dart';
 import 'package:scanvault/core/extensions/file_size_extensions.dart';
+import 'package:scanvault/features/pdf_creation/data/local_pdf_repository.dart';
 import 'package:scanvault/features/pdf_tools/domain/entities/pdf_tool_result.dart';
 import 'package:scanvault/features/pdf_viewer/presentation/pdf_viewer_screen.dart';
 
@@ -171,6 +173,41 @@ class PdfToolResultScreen extends StatelessWidget {
                   minimumSize: const Size(double.infinity, 50),
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final repo = LocalPdfRepository();
+                  final exportedPath = await repo.exportPdfToDownloads(
+                    pdfFile: File(doc.filePath),
+                    filename: '${doc.title}.pdf',
+                  );
+                  if (context.mounted) {
+                    if (exportedPath != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Saved to Downloads: $exportedPath'),
+                          backgroundColor: AppColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to save to Downloads.'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Save to Downloads (Device Storage)'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),

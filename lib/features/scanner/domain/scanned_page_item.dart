@@ -2,10 +2,14 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import '../../image_processing/domain/image_processor.dart';
 
-/// Represents a single captured page within a scan session.
+/// Represents a single captured page within a persistent scan session.
 class ScannedPageItem {
   final String id;
+  final String sessionId;
   final String originalImagePath;
+  final String? workingImagePath;
+  final String? processedImagePath;
+  final String? thumbnailPath;
   final Uint8List? cachedProcessedBytes;
   final ImageEnhancementParams enhancementParams;
   final math.Point<double>? cropTopLeft;
@@ -18,7 +22,11 @@ class ScannedPageItem {
 
   const ScannedPageItem({
     required this.id,
+    this.sessionId = 'default_session',
     required this.originalImagePath,
+    this.workingImagePath,
+    this.processedImagePath,
+    this.thumbnailPath,
     this.cachedProcessedBytes,
     this.enhancementParams = const ImageEnhancementParams(),
     this.cropTopLeft,
@@ -30,11 +38,16 @@ class ScannedPageItem {
     required this.capturedAt,
   });
 
-  bool get isCropped => cropTopLeft != null;
+  bool get isCropped => cropTopLeft != null || workingImagePath != null;
+  bool get isFiltered => processedImagePath != null || enhancementParams.filterMode != ScanFilterMode.original;
 
   ScannedPageItem copyWith({
     String? id,
+    String? sessionId,
     String? originalImagePath,
+    String? workingImagePath,
+    String? processedImagePath,
+    String? thumbnailPath,
     Uint8List? cachedProcessedBytes,
     ImageEnhancementParams? enhancementParams,
     math.Point<double>? cropTopLeft,
@@ -47,7 +60,11 @@ class ScannedPageItem {
   }) {
     return ScannedPageItem(
       id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
       originalImagePath: originalImagePath ?? this.originalImagePath,
+      workingImagePath: workingImagePath ?? this.workingImagePath,
+      processedImagePath: processedImagePath ?? this.processedImagePath,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       cachedProcessedBytes: cachedProcessedBytes ?? this.cachedProcessedBytes,
       enhancementParams: enhancementParams ?? this.enhancementParams,
       cropTopLeft: cropTopLeft ?? this.cropTopLeft,

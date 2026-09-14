@@ -25,11 +25,12 @@ class ScannerScreen extends StatefulWidget {
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
-  final ScannerController _controller = ScannerController();
+  late final ScannerController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = ScannerController(userId: widget.userId);
     _controller.addListener(_onStateChanged);
     _controller.initialize();
   }
@@ -53,7 +54,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       // Direct to Crop / Review
       final cropped = await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => CropScreen(page: page),
+          builder: (_) => CropScreen(page: page, userId: widget.userId),
         ),
       );
       if (cropped != null) {

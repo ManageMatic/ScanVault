@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/storage/page_image_resolver.dart';
 import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
 import '../../../shared/models/folder.dart';
@@ -87,7 +88,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   void _openCrop(ScannedPageItem page) async {
     final updated = await Navigator.of(context).push<ScannedPageItem>(
       MaterialPageRoute(
-        builder: (_) => CropScreen(page: page),
+        builder: (_) => CropScreen(page: page, userId: widget.userId),
       ),
     );
     if (updated != null) {
@@ -99,7 +100,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   void _openEnhance(ScannedPageItem page) async {
     final updated = await Navigator.of(context).push<ScannedPageItem>(
       MaterialPageRoute(
-        builder: (_) => EnhancementScreen(page: page),
+        builder: (_) => EnhancementScreen(page: page, userId: widget.userId),
       ),
     );
     if (updated != null) {
@@ -387,7 +388,15 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
       for (final p in pages) {
         rotations.add(p.enhancementParams.rotationDegrees);
-        if (p.cachedProcessedBytes != null) {
+        final resolvedPath = PageImageResolver.resolveCurrentImagePath(p);
+        if (resolvedPath != null) {
+          final f = File(resolvedPath);
+          if (await f.exists() && await f.length() > 0) {
+            rawImages.add(await f.readAsBytes());
+            continue;
+          }
+        }
+        if (p.cachedProcessedBytes != null && p.cachedProcessedBytes!.isNotEmpty) {
           rawImages.add(p.cachedProcessedBytes!);
         } else {
           final f = File(p.originalImagePath);
@@ -658,67 +667,122 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     final rotationQuarterTurns = (page.enhancementParams.rotationDegrees ~/ 90) % 4;
 
     Widget imageContent;
+    final resolvedPath = PageImageResolver.resolveCurrentImagePath(page);
 
-    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
-      imageContent = Image.memory(
-        page.cachedProcessedBytes!,
-        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}'),
+    if (resolvedPath != null) {
+      final file = File(resolvedPath);
+      final keySuffix = '${file.lengthSync()}_${file.lastModifiedSync().millisecondsSinceEpoch}';
+      imageContent = Image.file(
+        file,
+        key: ValueKey('file_${page.id}_$keySuffix'),
         fit: BoxFit.contain,
-        width: double.infinity,
-        height: double.infinity,
+        cacheWidth: 1200,
         gaplessPlayback: true,
         filterQuality: FilterQuality.medium,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return const Center(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+            ),
+          );
+        },
         errorBuilder: (context, error, stackTrace) {
-          debugPrint('Image.memory error in review: $error');
-          return _buildFileFallback(page);
+          debugPrint('[ScanVault][Review] Image.file error: $error for $resolvedPath');
+          return _buildMemoryFallbackOrError(page);
         },
       );
     } else {
-      imageContent = _buildFileFallback(page);
+      imageContent = _buildMemoryFallbackOrError(page);
     }
 
-    return RotatedBox(
-      quarterTurns: rotationQuarterTurns,
-      child: imageContent,
+    return Center(
+      child: RotatedBox(
+        quarterTurns: rotationQuarterTurns,
+        child: imageContent,
+      ),
     );
   }
 
-  Widget _buildFileFallback(ScannedPageItem page) {
-    final path = page.originalImagePath;
-    if (path.isNotEmpty) {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          key: ValueKey('file_${page.id}_${file.lengthSync()}'),
-          fit: BoxFit.contain,
-          width: double.infinity,
-          height: double.infinity,
-          gaplessPlayback: true,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint('Image.file error in review: $error');
-            return _buildErrorCard('Image could not be rendered: $error');
-          },
-        );
-      }
+  Widget _buildMemoryFallbackOrError(ScannedPageItem page) {
+    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
+      return Image.memory(
+        page.cachedProcessedBytes!,
+        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}'),
+        fit: BoxFit.contain,
+        cacheWidth: 1200,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return const Center(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorCard(page, 'Image could not be decoded.');
+        },
+      );
     }
-    return _buildErrorCard('Image file not found on device');
+    return _buildErrorCard(page, 'Page image is unavailable on storage.');
   }
 
-  Widget _buildErrorCard(String message) {
+  Widget _buildErrorCard(ScannedPageItem page, String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.broken_image_rounded, color: Colors.white38, size: 56),
+            const Icon(Icons.broken_image_rounded, color: Colors.amberAccent, size: 56),
             const SizedBox(height: 12),
             Text(
               message,
               style: AppTypography.bodySmall.copyWith(color: Colors.white70),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => setState(() {}),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Retry'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    widget.scannerController.removePage(page.id);
+                    if (widget.scannerController.pages.isEmpty) {
+                      Navigator.of(context).pop();
+                    } else {
+                      setState(() {
+                        _currentPageIndex = _currentPageIndex.clamp(0, widget.scannerController.pages.length - 1);
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.redAccent),
+                  label: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.redAccent),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
