@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/storage/image_pipeline_diagnostics.dart';
 import '../../../core/storage/page_image_resolver.dart';
 import '../../../core/storage/storage_manager_service.dart';
 import '../../../shared/models/document.dart';
@@ -386,23 +387,19 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
       final rawImages = <dynamic>[];
       final rotations = <int>[];
 
-      for (final p in pages) {
+      for (var i = 0; i < pages.length; i++) {
+        final p = pages[i];
         rotations.add(p.enhancementParams.rotationDegrees);
-        final resolvedPath = PageImageResolver.resolveCurrentImagePath(p);
-        if (resolvedPath != null) {
-          final f = File(resolvedPath);
-          if (await f.exists() && await f.length() > 0) {
+        final resolved = await PageImageResolver.resolveCurrentImage(p);
+        if (resolved.isValid) {
+          if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
+            rawImages.add(resolved.bytes!);
+          } else if (resolved.path != null) {
+            final f = File(resolved.path!);
             rawImages.add(await f.readAsBytes());
-            continue;
           }
-        }
-        if (p.cachedProcessedBytes != null && p.cachedProcessedBytes!.isNotEmpty) {
-          rawImages.add(p.cachedProcessedBytes!);
         } else {
-          final f = File(p.originalImagePath);
-          if (await f.exists()) {
-            rawImages.add(await f.readAsBytes());
-          }
+          throw Exception('Page ${i + 1} image is corrupted or missing: ${resolved.errorMessage}');
         }
       }
 
@@ -666,23 +663,12 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   Widget _buildPagePreview(ScannedPageItem page) {
     final rotationQuarterTurns = (page.enhancementParams.rotationDegrees ~/ 90) % 4;
 
-    Widget imageContent;
-    final resolvedPath = PageImageResolver.resolveCurrentImagePath(page);
+    ImagePipelineDiagnostics.logStage(stage: 'PAGE_EDITOR', page: page);
 
-    if (resolvedPath != null) {
-      final file = File(resolvedPath);
-      final keySuffix = '${file.lengthSync()}_${file.lastModifiedSync().millisecondsSinceEpoch}';
-      imageContent = Image.file(
-        file,
-        key: ValueKey('file_${page.id}_$keySuffix'),
-        fit: BoxFit.contain,
-        cacheWidth: 1200,
-        gaplessPlayback: true,
-        filterQuality: FilterQuality.medium,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded || frame != null) {
-            return child;
-          }
+    return FutureBuilder<ResolvedPageImage>(
+      future: PageImageResolver.resolveCurrentImage(page),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: SizedBox(
               width: 36,
@@ -690,51 +676,64 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
               child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
             ),
           );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('[ScanVault][Review] Image.file error: $error for $resolvedPath');
-          return _buildMemoryFallbackOrError(page);
-        },
-      );
-    } else {
-      imageContent = _buildMemoryFallbackOrError(page);
-    }
+        }
 
-    return Center(
-      child: RotatedBox(
-        quarterTurns: rotationQuarterTurns,
-        child: imageContent,
-      ),
+        if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.isValid) {
+          final err = snapshot.data?.errorMessage ?? snapshot.error?.toString() ?? 'Image could not be resolved.';
+          return _buildErrorCard(page, err);
+        }
+
+        final resolved = snapshot.data!;
+        Widget imageWidget;
+
+        if (resolved.path != null && resolved.path!.isNotEmpty) {
+          final file = File(resolved.path!);
+          imageWidget = Image.file(
+            file,
+            key: ValueKey('file_${page.id}_${resolved.path}_${resolved.fileSizeBytes}'),
+            fit: BoxFit.contain,
+            cacheWidth: 1200,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('[ScanVault][Review] Image.file error: $error for ${resolved.path}');
+              if (resolved.bytes != null) {
+                return Image.memory(
+                  resolved.bytes!,
+                  key: ValueKey('mem_fallback_${page.id}_${resolved.fileSizeBytes}'),
+                  fit: BoxFit.contain,
+                  cacheWidth: 1200,
+                  gaplessPlayback: true,
+                  filterQuality: FilterQuality.medium,
+                );
+              }
+              return _buildErrorCard(page, 'Failed to display image from disk.');
+            },
+          );
+        } else if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
+          imageWidget = Image.memory(
+            resolved.bytes!,
+            key: ValueKey('mem_${page.id}_${resolved.fileSizeBytes}'),
+            fit: BoxFit.contain,
+            cacheWidth: 1200,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildErrorCard(page, 'Failed to decode in-memory image bytes.');
+            },
+          );
+        } else {
+          return _buildErrorCard(page, 'No image content available.');
+        }
+
+        return Center(
+          child: RotatedBox(
+            quarterTurns: rotationQuarterTurns,
+            child: imageWidget,
+          ),
+        );
+      },
     );
-  }
-
-  Widget _buildMemoryFallbackOrError(ScannedPageItem page) {
-    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
-      return Image.memory(
-        page.cachedProcessedBytes!,
-        key: ValueKey('mem_${page.id}_${page.cachedProcessedBytes!.length}'),
-        fit: BoxFit.contain,
-        cacheWidth: 1200,
-        gaplessPlayback: true,
-        filterQuality: FilterQuality.medium,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded || frame != null) {
-            return child;
-          }
-          return const Center(
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildErrorCard(page, 'Image could not be decoded.');
-        },
-      );
-    }
-    return _buildErrorCard(page, 'Page image is unavailable on storage.');
   }
 
   Widget _buildErrorCard(ScannedPageItem page, String message) {

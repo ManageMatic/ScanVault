@@ -238,4 +238,120 @@ void main() {
       expect(await repo.validateImage(imgFile), isTrue);
     });
   });
+
+  group('End-to-End Multi-Page Lifecycle & Resolver Regression Tests', () {
+    test('Capture 3 pages, crop page 2, filter page 3, delete page 2, all pages resolve and decode', () async {
+      final userId = 'regression_user';
+      final sessionId = 'regression_session';
+      final sampleBytes = ImageProcessor.createSampleDocumentBitmap();
+
+      // 1. Capture 3 pages
+      final p1Import = await workspaceManager.importSourceImage(
+        userId: userId,
+        sessionId: sessionId,
+        pageId: 'page_1',
+        rawBytes: sampleBytes,
+      );
+      final p2Import = await workspaceManager.importSourceImage(
+        userId: userId,
+        sessionId: sessionId,
+        pageId: 'page_2',
+        rawBytes: sampleBytes,
+      );
+      final p3Import = await workspaceManager.importSourceImage(
+        userId: userId,
+        sessionId: sessionId,
+        pageId: 'page_3',
+        rawBytes: sampleBytes,
+      );
+
+      var page1 = ScannedPageItem(
+        id: 'page_1',
+        sessionId: sessionId,
+        originalImagePath: p1Import['originalPath']!,
+        thumbnailPath: p1Import['thumbnailPath'],
+        capturedAt: DateTime.now(),
+      );
+      var page2 = ScannedPageItem(
+        id: 'page_2',
+        sessionId: sessionId,
+        originalImagePath: p2Import['originalPath']!,
+        thumbnailPath: p2Import['thumbnailPath'],
+        capturedAt: DateTime.now(),
+      );
+      var page3 = ScannedPageItem(
+        id: 'page_3',
+        sessionId: sessionId,
+        originalImagePath: p3Import['originalPath']!,
+        thumbnailPath: p3Import['thumbnailPath'],
+        capturedAt: DateTime.now(),
+      );
+
+      // 2. Crop page 2
+      final croppedP2Bytes = ImageProcessor.cropQuadrilateral(
+        rawBytes: sampleBytes,
+        topLeft: const math.Point(0.05, 0.05),
+        topRight: const math.Point(0.95, 0.05),
+        bottomRight: const math.Point(0.95, 0.95),
+        bottomLeft: const math.Point(0.05, 0.95),
+        displayWidth: 1.0,
+        displayHeight: 1.0,
+      );
+      final workPath = await workspaceManager.saveWorkingImage(
+        userId: userId,
+        sessionId: sessionId,
+        pageId: 'page_2',
+        bytes: croppedP2Bytes,
+      );
+      page2 = page2.copyWith(workingImagePath: workPath, cachedProcessedBytes: croppedP2Bytes);
+
+      // 3. Filter page 3
+      final filteredP3Bytes = ImageProcessor.processImageSync(
+        rawBytes: sampleBytes,
+        params: const ImageEnhancementParams(filterMode: ScanFilterMode.documentClean),
+      );
+      final procPath = await workspaceManager.saveProcessedImage(
+        userId: userId,
+        sessionId: sessionId,
+        pageId: 'page_3',
+        bytes: filteredP3Bytes,
+      );
+      page3 = page3.copyWith(processedImagePath: procPath, cachedProcessedBytes: filteredP3Bytes);
+
+      // 4. Validate canonical resolutions
+      final res1 = PageImageResolver.resolveCurrentImagePath(page1);
+      final res2 = PageImageResolver.resolveCurrentImagePath(page2);
+      final res3 = PageImageResolver.resolveCurrentImagePath(page3);
+
+      expect(res1, equals(p1Import['originalPath']));
+      expect(res2, equals(workPath));
+      expect(res3, equals(procPath));
+
+      // 5. Verify decodability of all resolved files
+      for (final p in [res1, res2, res3]) {
+        expect(p, isNotNull);
+        final f = File(p!);
+        expect(f.existsSync(), isTrue);
+        expect(f.lengthSync(), greaterThan(0));
+        final decoded = img.decodeImage(f.readAsBytesSync());
+        expect(decoded, isNotNull);
+        expect(decoded!.width, greaterThan(50));
+        expect(decoded.height, greaterThan(50));
+      }
+
+      // 6. Delete page 2 from list
+      final remainingPages = [page1, page3];
+      expect(remainingPages.length, equals(2));
+      expect(remainingPages[0].id, equals('page_1'));
+      expect(remainingPages[1].id, equals('page_3'));
+
+      // 7. Remaining pages still resolve and decode flawlessly
+      final remRes1 = PageImageResolver.resolveCurrentImagePath(remainingPages[0]);
+      final remRes2 = PageImageResolver.resolveCurrentImagePath(remainingPages[1]);
+      expect(remRes1, equals(p1Import['originalPath']));
+      expect(remRes2, equals(procPath));
+
+      await workspaceManager.cleanupSession(userId, sessionId);
+    });
+  });
 }

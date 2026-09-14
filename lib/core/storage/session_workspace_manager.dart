@@ -82,9 +82,20 @@ class SessionWorkspaceManager {
       throw Exception('Image bytes cannot be empty.');
     }
 
+    // Pre-validation: verify bytes represent a valid decodable image
+    final preDecoded = img.decodeImage(finalBytes);
+    if (preDecoded == null || preDecoded.width <= 0 || preDecoded.height <= 0) {
+      throw Exception('Imported bytes could not be decoded as a valid image.');
+    }
+
     // 1. Write original stable copy
     final originalFile = File(originalPath);
     await originalFile.writeAsBytes(finalBytes, flush: true);
+
+    // Post-validation: verify file exists on disk and is readable/decodable
+    if (!await originalFile.exists() || await originalFile.length() <= 0) {
+      throw Exception('Failed to write stable original image to disk: $originalPath');
+    }
 
     // 2. Generate and save thumbnail (~320px)
     await _generateAndSaveThumbnail(finalBytes, thumbPath);
@@ -102,12 +113,26 @@ class SessionWorkspaceManager {
     required String pageId,
     required Uint8List bytes,
   }) async {
+    if (bytes.isEmpty) {
+      throw Exception('Working image bytes cannot be empty.');
+    }
+
+    // Pre-validation: verify bytes represent a valid decodable image
+    final preDecoded = img.decodeImage(bytes);
+    if (preDecoded == null || preDecoded.width <= 0 || preDecoded.height <= 0) {
+      throw Exception('Working image bytes could not be decoded as a valid image.');
+    }
+
     final pageDir = await getPageDirectory(userId, sessionId, pageId);
     final workingPath = p.join(pageDir.path, 'working.jpg');
     final thumbPath = p.join(pageDir.path, 'thumbnail.jpg');
 
     final file = File(workingPath);
     await file.writeAsBytes(bytes, flush: true);
+
+    if (!await file.exists() || await file.length() <= 0) {
+      throw Exception('Failed to persist working image to disk: $workingPath');
+    }
 
     // Update thumbnail with current working image
     await _generateAndSaveThumbnail(bytes, thumbPath);
@@ -122,12 +147,26 @@ class SessionWorkspaceManager {
     required String pageId,
     required Uint8List bytes,
   }) async {
+    if (bytes.isEmpty) {
+      throw Exception('Processed image bytes cannot be empty.');
+    }
+
+    // Pre-validation: verify bytes represent a valid decodable image
+    final preDecoded = img.decodeImage(bytes);
+    if (preDecoded == null || preDecoded.width <= 0 || preDecoded.height <= 0) {
+      throw Exception('Processed image bytes could not be decoded as a valid image.');
+    }
+
     final pageDir = await getPageDirectory(userId, sessionId, pageId);
     final processedPath = p.join(pageDir.path, 'processed.jpg');
     final thumbPath = p.join(pageDir.path, 'thumbnail.jpg');
 
     final file = File(processedPath);
     await file.writeAsBytes(bytes, flush: true);
+
+    if (!await file.exists() || await file.length() <= 0) {
+      throw Exception('Failed to persist processed image to disk: $processedPath');
+    }
 
     // Update thumbnail with processed image
     await _generateAndSaveThumbnail(bytes, thumbPath);

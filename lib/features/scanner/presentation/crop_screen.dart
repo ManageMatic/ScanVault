@@ -2,15 +2,16 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/storage/image_pipeline_diagnostics.dart';
+import '../../../core/storage/page_image_resolver.dart';
+import '../../../core/storage/session_workspace_manager.dart';
 import '../../image_processing/domain/document_detector.dart';
 import '../../image_processing/domain/image_processor.dart';
 import '../domain/scanned_page_item.dart';
-
-import 'package:path/path.dart' as p;
-import '../../../core/storage/page_image_resolver.dart';
-import '../../../core/storage/session_workspace_manager.dart';
 
 /// Quadrilateral crop and perspective screen conforming to Google Stitch specifications.
 class CropScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class CropScreen extends StatefulWidget {
 }
 
 class _CropScreenState extends State<CropScreen> {
-  // Stored in normalized (0.0 to 1.0) space
+  // Stored in normalized (0.0 to 1.0) space relative to actual source image
   math.Point<double> _normTopLeft = const math.Point(0.05, 0.05);
   math.Point<double> _normTopRight = const math.Point(0.95, 0.05);
   math.Point<double> _normBottomRight = const math.Point(0.95, 0.95);
@@ -36,11 +37,12 @@ class _CropScreenState extends State<CropScreen> {
 
   int _activeCorner = -1; // 0: TL, 1: TR, 2: BR, 3: BL
   Uint8List? _imageBytes;
+  int _imageWidth = 0;
+  int _imageHeight = 0;
   bool _isLoading = true;
   bool _isDetecting = false;
   bool _isApplyingCrop = false;
   int _rotationDegrees = 0;
-  Size _imageDisplaySize = Size.zero;
   DocumentDetectionResult? _detectionResult;
   final SessionWorkspaceManager _workspaceManager = SessionWorkspaceManager();
 
@@ -53,33 +55,36 @@ class _CropScreenState extends State<CropScreen> {
 
   Future<void> _loadImageAndDetect() async {
     try {
-      final bestPath = PageImageResolver.resolveCurrentImagePath(widget.page);
-      if (bestPath != null) {
-        final file = File(bestPath);
-        if (await file.exists() && await file.length() > 0) {
-          _imageBytes = await file.readAsBytes();
+      final resolved = await PageImageResolver.resolveCurrentImage(widget.page);
+      if (resolved.isValid) {
+        if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
+          _imageBytes = resolved.bytes;
+        } else if (resolved.path != null) {
+          _imageBytes = await File(resolved.path!).readAsBytes();
         }
+        _imageWidth = resolved.width;
+        _imageHeight = resolved.height;
       }
 
-      if (_imageBytes == null && widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
+      // Fallback
+      if (_imageBytes == null && widget.page.cachedProcessedBytes != null) {
         _imageBytes = widget.page.cachedProcessedBytes;
+        final decoded = img.decodeImage(_imageBytes!);
+        if (decoded != null) {
+          _imageWidth = decoded.width;
+          _imageHeight = decoded.height;
+        }
       }
 
       if (_imageBytes != null) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        if (mounted) setState(() => _isLoading = false);
 
         if (widget.page.cropTopLeft != null) {
-          // Restore previously saved normalized crop points
           _normTopLeft = widget.page.cropTopLeft!;
           _normTopRight = widget.page.cropTopRight!;
           _normBottomRight = widget.page.cropBottomRight!;
           _normBottomLeft = widget.page.cropBottomLeft!;
         } else {
-          // Run Automatic Document Detection in background
           _isDetecting = true;
           if (mounted) setState(() {});
 
@@ -160,49 +165,85 @@ class _CropScreenState extends State<CropScreen> {
     }
 
     setState(() => _isApplyingCrop = true);
-    await Future.delayed(const Duration(milliseconds: 60));
+    await Future.delayed(const Duration(milliseconds: 50));
 
-    final croppedBytes = ImageProcessor.cropQuadrilateral(
-      rawBytes: _imageBytes!,
-      topLeft: _normTopLeft,
-      topRight: _normTopRight,
-      bottomRight: _normBottomRight,
-      bottomLeft: _normBottomLeft,
-      displayWidth: 1.0,
-      displayHeight: 1.0,
-    );
-
-    // Save working image to disk in stable session workspace
-    String? workingPath;
-    String? thumbPath;
     try {
-      workingPath = await _workspaceManager.saveWorkingImage(
+      final croppedBytes = ImageProcessor.cropQuadrilateral(
+        rawBytes: _imageBytes!,
+        topLeft: _normTopLeft,
+        topRight: _normTopRight,
+        bottomRight: _normBottomRight,
+        bottomLeft: _normBottomLeft,
+        displayWidth: 1.0,
+        displayHeight: 1.0,
+      );
+
+      // Validate decoded output
+      final decoded = img.decodeImage(croppedBytes);
+      if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+        throw Exception('Crop output is not a valid decodable image.');
+      }
+
+      // Save working image to disk in stable session workspace
+      final workingPath = await _workspaceManager.saveWorkingImage(
         userId: widget.userId,
         sessionId: widget.page.sessionId,
         pageId: widget.page.id,
         bytes: croppedBytes,
       );
-      thumbPath = p.join(p.dirname(workingPath), 'thumbnail.jpg');
+      final thumbPath = p.join(p.dirname(workingPath), 'thumbnail.jpg');
+
+      final updated = widget.page.copyWith(
+        workingImagePath: workingPath,
+        thumbnailPath: thumbPath,
+        cachedProcessedBytes: croppedBytes,
+        cropTopLeft: _normTopLeft,
+        cropTopRight: _normTopRight,
+        cropBottomRight: _normBottomRight,
+        cropBottomLeft: _normBottomLeft,
+        displayWidth: _imageWidth.toDouble(),
+        displayHeight: _imageHeight.toDouble(),
+        enhancementParams: widget.page.enhancementParams.copyWith(rotationDegrees: _rotationDegrees),
+      );
+
+      ImagePipelineDiagnostics.logStage(stage: 'CROP_OUTPUT', page: updated);
+
+      if (mounted) {
+        Navigator.of(context).pop(updated);
+      }
     } catch (e) {
-      debugPrint('[ScanVault][Crop] Error saving working image: $e');
+      debugPrint('[ScanVault][Crop] Error applying crop: $e');
+      if (mounted) {
+        setState(() => _isApplyingCrop = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to apply crop: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Rect _calculateImageRect(Size containerSize) {
+    if (_imageWidth <= 0 || _imageHeight <= 0) {
+      return Rect.fromLTWH(0, 0, containerSize.width, containerSize.height);
     }
 
-    final updated = widget.page.copyWith(
-      workingImagePath: workingPath,
-      thumbnailPath: thumbPath ?? widget.page.thumbnailPath,
-      cachedProcessedBytes: croppedBytes,
-      cropTopLeft: _normTopLeft,
-      cropTopRight: _normTopRight,
-      cropBottomRight: _normBottomRight,
-      cropBottomLeft: _normBottomLeft,
-      displayWidth: _imageDisplaySize.width,
-      displayHeight: _imageDisplaySize.height,
-      enhancementParams: widget.page.enhancementParams.copyWith(rotationDegrees: _rotationDegrees),
+    final isQuarterRotated = (_rotationDegrees ~/ 90) % 2 == 1;
+    final effectiveWidth = isQuarterRotated ? _imageHeight.toDouble() : _imageWidth.toDouble();
+    final effectiveHeight = isQuarterRotated ? _imageWidth.toDouble() : _imageHeight.toDouble();
+
+    final fittedSizes = applyBoxFit(
+      BoxFit.contain,
+      Size(effectiveWidth, effectiveHeight),
+      containerSize,
     );
 
-    if (mounted) {
-      Navigator.of(context).pop(updated);
-    }
+    final fittedWidth = fittedSizes.destination.width;
+    final fittedHeight = fittedSizes.destination.height;
+
+    final dx = (containerSize.width - fittedWidth) / 2.0;
+    final dy = (containerSize.height - fittedHeight) / 2.0;
+
+    return Rect.fromLTWH(dx, dy, fittedWidth, fittedHeight);
   }
 
   @override
@@ -294,26 +335,34 @@ class _CropScreenState extends State<CropScreen> {
                           padding: const EdgeInsets.all(16.0),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              final imgW = constraints.maxWidth;
-                              final imgH = constraints.maxHeight;
+                              final containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+                              final imageRect = _calculateImageRect(containerSize);
 
-                              if (imgW > 0 && imgH > 0) {
-                                _imageDisplaySize = Size(imgW, imgH);
-                              }
-
-                              // Denormalize points to current render box constraints
-                              final screenTl = math.Point(_normTopLeft.x * imgW, _normTopLeft.y * imgH);
-                              final screenTr = math.Point(_normTopRight.x * imgW, _normTopRight.y * imgH);
-                              final screenBr = math.Point(_normBottomRight.x * imgW, _normBottomRight.y * imgH);
-                              final screenBl = math.Point(_normBottomLeft.x * imgW, _normBottomLeft.y * imgH);
+                              // Denormalize points strictly to the actual displayed image rect
+                              final screenTl = math.Point(
+                                imageRect.left + _normTopLeft.x * imageRect.width,
+                                imageRect.top + _normTopLeft.y * imageRect.height,
+                              );
+                              final screenTr = math.Point(
+                                imageRect.left + _normTopRight.x * imageRect.width,
+                                imageRect.top + _normTopRight.y * imageRect.height,
+                              );
+                              final screenBr = math.Point(
+                                imageRect.left + _normBottomRight.x * imageRect.width,
+                                imageRect.top + _normBottomRight.y * imageRect.height,
+                              );
+                              final screenBl = math.Point(
+                                imageRect.left + _normBottomLeft.x * imageRect.width,
+                                imageRect.top + _normBottomLeft.y * imageRect.height,
+                              );
 
                               return SizedBox(
-                                width: imgW,
-                                height: imgH,
+                                width: containerSize.width,
+                                height: containerSize.height,
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    // Background Image
+                                    // Background Image positioned inside container
                                     Positioned.fill(
                                       child: RotatedBox(
                                         quarterTurns: _rotationDegrees ~/ 90,
@@ -342,11 +391,11 @@ class _CropScreenState extends State<CropScreen> {
                                           );
                                         },
                                         onPanUpdate: (details) {
-                                          if (_activeCorner >= 0 && imgW > 0 && imgH > 0) {
+                                          if (_activeCorner >= 0 && imageRect.width > 0 && imageRect.height > 0) {
                                             setState(() {
                                               final pos = details.localPosition;
-                                              final clampedNormX = (pos.dx / imgW).clamp(0.0, 1.0);
-                                              final clampedNormY = (pos.dy / imgH).clamp(0.0, 1.0);
+                                              final clampedNormX = ((pos.dx - imageRect.left) / imageRect.width).clamp(0.0, 1.0);
+                                              final clampedNormY = ((pos.dy - imageRect.top) / imageRect.height).clamp(0.0, 1.0);
                                               final newNormPt = math.Point(clampedNormX, clampedNormY);
 
                                               switch (_activeCorner) {
@@ -373,6 +422,7 @@ class _CropScreenState extends State<CropScreen> {
                                             topRight: screenTr,
                                             bottomRight: screenBr,
                                             bottomLeft: screenBl,
+                                            imageBounds: imageRect,
                                             activeCorner: _activeCorner,
                                           ),
                                         ),
@@ -500,6 +550,7 @@ class _CropOverlayPainter extends CustomPainter {
   final math.Point<double> topRight;
   final math.Point<double> bottomRight;
   final math.Point<double> bottomLeft;
+  final Rect imageBounds;
   final int activeCorner;
 
   _CropOverlayPainter({
@@ -507,34 +558,36 @@ class _CropOverlayPainter extends CustomPainter {
     required this.topRight,
     required this.bottomRight,
     required this.bottomLeft,
+    required this.imageBounds,
     required this.activeCorner,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path()
+    // 1. Dark overlay outside the crop quadrilateral
+    final cropPath = Path()
       ..moveTo(topLeft.x, topLeft.y)
       ..lineTo(topRight.x, topRight.y)
       ..lineTo(bottomRight.x, bottomRight.y)
       ..lineTo(bottomLeft.x, bottomLeft.y)
       ..close();
 
-    // Darkened Dim Background Outside Quad
-    final bgPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    final dimPath = Path.combine(PathOperation.difference, bgPath, path);
+    final imagePath = Path()..addRect(imageBounds);
+    final darkMask = Path.combine(PathOperation.difference, imagePath, cropPath);
+
     final dimPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
-    canvas.drawPath(dimPath, dimPaint);
+    canvas.drawPath(darkMask, dimPaint);
 
-    // Quad Border
+    // 2. Crop Quadrilateral Border
     final borderPaint = Paint()
-      ..color = AppColors.primaryFixed
-      ..strokeWidth = 2.5
+      ..color = AppColors.primary
+      ..strokeWidth = 2.4
       ..style = PaintingStyle.stroke;
-    canvas.drawPath(path, borderPaint);
+    canvas.drawPath(cropPath, borderPaint);
 
-    // Grid Guidelines (Rule of thirds inside the quad)
+    // 3. Grid Lines (Rule of Thirds)
     final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.25)
+      ..color = Colors.white.withValues(alpha: 0.35)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
@@ -548,7 +601,7 @@ class _CropOverlayPainter extends CustomPainter {
       canvas.drawLine(Offset(pLeft.x, pLeft.y), Offset(pRight.x, pRight.y), gridPaint);
     }
 
-    // Corner Drag Handles
+    // 4. Corner Drag Handles
     final points = [topLeft, topRight, bottomRight, bottomLeft];
     final handleFill = Paint()..color = Colors.white;
     final handleBorder = Paint()

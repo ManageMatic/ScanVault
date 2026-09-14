@@ -1,21 +1,46 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import '../../features/scanner/domain/scanned_page_item.dart';
 
-class ImageValidationResult {
-  final bool isValid;
-  final String? resolvedPath;
-  final Uint8List? resolvedBytes;
+enum PageImageSource {
+  processed,
+  working,
+  original,
+  memory,
+  none,
+}
+
+class ResolvedPageImage {
+  final String? path;
+  final Uint8List? bytes;
+  final int width;
+  final int height;
+  final PageImageSource source;
   final int fileSizeBytes;
   final String? errorMessage;
 
-  const ImageValidationResult({
-    required this.isValid,
-    this.resolvedPath,
-    this.resolvedBytes,
-    this.fileSizeBytes = 0,
+  const ResolvedPageImage({
+    this.path,
+    this.bytes,
+    required this.width,
+    required this.height,
+    required this.source,
+    required this.fileSizeBytes,
     this.errorMessage,
   });
+
+  bool get isValid => (path != null || (bytes != null && bytes!.isNotEmpty)) && width > 0 && height > 0;
+
+  factory ResolvedPageImage.error(String message) {
+    return ResolvedPageImage(
+      width: 0,
+      height: 0,
+      source: PageImageSource.none,
+      fileSizeBytes: 0,
+      errorMessage: message,
+    );
+  }
 }
 
 /// Canonical single source of truth for resolving the active display image file or bytes for a page.
@@ -49,41 +74,73 @@ class PageImageResolver {
     return null;
   }
 
-  /// Full async validation resolving path or in-memory bytes with sanity checks.
-  static Future<ImageValidationResult> validateAndResolve(ScannedPageItem page) async {
-    // 1. Try file path resolution
-    final bestPath = resolveCurrentImagePath(page);
-    if (bestPath != null) {
+  /// Full async decodability validation resolving the best candidate:
+  /// processed -> working -> original -> cachedProcessedBytes
+  static Future<ResolvedPageImage> resolveCurrentImage(ScannedPageItem page) async {
+    // Candidate 1: processedImagePath
+    if (page.processedImagePath != null && page.processedImagePath!.isNotEmpty) {
+      final res = await _validateFileCandidate(page.processedImagePath!, PageImageSource.processed);
+      if (res != null && res.isValid) return res;
+    }
+
+    // Candidate 2: workingImagePath
+    if (page.workingImagePath != null && page.workingImagePath!.isNotEmpty) {
+      final res = await _validateFileCandidate(page.workingImagePath!, PageImageSource.working);
+      if (res != null && res.isValid) return res;
+    }
+
+    // Candidate 3: originalImagePath
+    if (page.originalImagePath.isNotEmpty) {
+      final res = await _validateFileCandidate(page.originalImagePath, PageImageSource.original);
+      if (res != null && res.isValid) return res;
+    }
+
+    // Candidate 4: cachedProcessedBytes
+    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
       try {
-        final f = File(bestPath);
-        final size = await f.length();
-        if (size > 0) {
-          if (kDebugMode) {
-            debugPrint('[ScanVault][ImagePipeline] Resolved page ${page.id} -> $bestPath ($size bytes)');
-          }
-          return ImageValidationResult(
-            isValid: true,
-            resolvedPath: bestPath,
-            fileSizeBytes: size,
+        final decoded = img.decodeImage(page.cachedProcessedBytes!);
+        if (decoded != null && decoded.width > 0 && decoded.height > 0) {
+          return ResolvedPageImage(
+            bytes: page.cachedProcessedBytes,
+            width: decoded.width,
+            height: decoded.height,
+            source: PageImageSource.memory,
+            fileSizeBytes: page.cachedProcessedBytes!.length,
           );
         }
       } catch (e) {
-        debugPrint('[ScanVault][ImagePipeline] Error reading $bestPath: $e');
+        debugPrint('[ScanVault][ImageResolver] Failed to decode in-memory bytes for page ${page.id}: $e');
       }
     }
 
-    // 2. Fallback to cachedProcessedBytes if present in memory
-    if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
-      return ImageValidationResult(
-        isValid: true,
-        resolvedBytes: page.cachedProcessedBytes,
-        fileSizeBytes: page.cachedProcessedBytes!.length,
-      );
-    }
+    return ResolvedPageImage.error('No valid or decodable image candidate found for page ${page.id}.');
+  }
 
-    return ImageValidationResult(
-      isValid: false,
-      errorMessage: 'Page image file not found or corrupted at: ${page.originalImagePath}',
-    );
+  static Future<ResolvedPageImage?> _validateFileCandidate(String filePath, PageImageSource source) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) return null;
+      final size = await file.length();
+      if (size <= 0) return null;
+
+      final bytes = await file.readAsBytes();
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+        debugPrint('[ScanVault][ImageResolver] Candidate file $filePath was un-decodable.');
+        return null;
+      }
+
+      return ResolvedPageImage(
+        path: filePath,
+        bytes: bytes,
+        width: decoded.width,
+        height: decoded.height,
+        source: source,
+        fileSizeBytes: size,
+      );
+    } catch (e) {
+      debugPrint('[ScanVault][ImageResolver] Error validating candidate $filePath: $e');
+      return null;
+    }
   }
 }

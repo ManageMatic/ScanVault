@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/storage/image_pipeline_diagnostics.dart';
+import '../../../core/storage/page_image_resolver.dart';
 import '../../../core/storage/session_workspace_manager.dart';
 import '../../image_processing/domain/image_processor.dart';
 import '../domain/scanned_page_item.dart';
@@ -49,7 +51,8 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
 
   Future<void> _loadAndProcess() async {
     try {
-      // Priority: working image (crop) -> original image
+      // Base image priority: working image (crop) -> original image
+      // We avoid basing on already-processed filter to allow non-destructive filter switching
       String? basePath = widget.page.workingImagePath;
       if (basePath == null || basePath.isEmpty || !File(basePath).existsSync()) {
         basePath = widget.page.originalImagePath;
@@ -62,8 +65,11 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
         }
       }
 
-      if (_rawBytes == null && widget.page.cachedProcessedBytes != null && widget.page.cachedProcessedBytes!.isNotEmpty) {
-        _rawBytes = widget.page.cachedProcessedBytes;
+      if (_rawBytes == null) {
+        final resolved = await PageImageResolver.resolveCurrentImage(widget.page);
+        if (resolved.isValid) {
+          _rawBytes = resolved.bytes ?? (resolved.path != null ? await File(resolved.path!).readAsBytes() : null);
+        }
       }
 
       if (_rawBytes != null) {
@@ -156,6 +162,8 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       cachedProcessedBytes: finalProcessed,
       enhancementParams: newParams,
     );
+
+    ImagePipelineDiagnostics.logStage(stage: 'FILTER_OUTPUT', page: updated);
 
     if (mounted) {
       Navigator.of(context).pop(updated);

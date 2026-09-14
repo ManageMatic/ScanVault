@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/storage/image_pipeline_diagnostics.dart';
 import '../../../core/storage/session_workspace_manager.dart';
 import '../../../shared/models/scan_session.dart';
 import '../../image_processing/domain/image_processor.dart';
@@ -150,6 +151,8 @@ class ScannerController extends ChangeNotifier {
       _pages.add(page);
       _isCapturing = false;
       notifyListeners();
+
+      ImagePipelineDiagnostics.logStage(stage: 'CAPTURE', page: page);
       return page;
     } catch (e) {
       debugPrint('Failed to capture page: $e');
