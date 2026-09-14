@@ -48,6 +48,9 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   late final StorageManagerService _storageService;
   late final PdfGeneratorService _pdfGenerator;
 
+  final Map<String, ResolvedPageImage> _resolvedCache = {};
+  final Set<String> _resolvingKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -60,10 +63,42 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
 
     widget.scannerController.addListener(_onControllerChanged);
     _loadFolders();
+    _preResolveAllPages();
+  }
+
+  void _preResolveAllPages() {
+    for (final page in widget.scannerController.pages) {
+      _ensurePageResolved(page);
+    }
   }
 
   void _onControllerChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _preResolveAllPages();
+      setState(() {});
+    }
+  }
+
+  void _ensurePageResolved(ScannedPageItem page) {
+    final key = '${page.id}_v${page.imageVersion}';
+    if (_resolvedCache.containsKey(key) || _resolvingKeys.contains(key)) return;
+
+    _resolvingKeys.add(key);
+    PageImageResolver.resolveCurrentImage(page).then((resolved) {
+      if (mounted) {
+        setState(() {
+          _resolvedCache[key] = resolved;
+          _resolvingKeys.remove(key);
+        });
+      }
+    }).catchError((e) {
+      if (mounted) {
+        setState(() {
+          _resolvedCache[key] = ResolvedPageImage.error(e.toString());
+          _resolvingKeys.remove(key);
+        });
+      }
+    });
   }
 
   Future<void> _loadFolders() async {
@@ -94,6 +129,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     );
     if (updated != null) {
       widget.scannerController.updatePage(updated);
+      _ensurePageResolved(updated);
       setState(() {});
     }
   }
@@ -106,6 +142,7 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
     );
     if (updated != null) {
       widget.scannerController.updatePage(updated);
+      _ensurePageResolved(updated);
       setState(() {});
     }
   }
@@ -661,78 +698,89 @@ class _SessionReviewScreenState extends State<SessionReviewScreen> {
   }
 
   Widget _buildPagePreview(ScannedPageItem page) {
-    final rotationQuarterTurns = (page.enhancementParams.rotationDegrees ~/ 90) % 4;
+    final key = '${page.id}_v${page.imageVersion}';
+    final resolved = _resolvedCache[key];
 
     ImagePipelineDiagnostics.logStage(stage: 'PAGE_EDITOR', page: page);
 
-    return FutureBuilder<ResolvedPageImage>(
-      future: PageImageResolver.resolveCurrentImage(page),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
-            ),
-          );
-        }
+    if (resolved == null) {
+      _ensurePageResolved(page);
 
-        if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.isValid) {
-          final err = snapshot.data?.errorMessage ?? snapshot.error?.toString() ?? 'Image could not be resolved.';
-          return _buildErrorCard(page, err);
-        }
+      // Check if an earlier version exists in cache for this page
+      final previousKey = _resolvedCache.keys.firstWhere(
+        (k) => k.startsWith('${page.id}_v') && _resolvedCache[k]?.isValid == true,
+        orElse: () => '',
+      );
+      if (previousKey.isNotEmpty && _resolvedCache[previousKey] != null) {
+        return _buildResolvedImageWidget(page, _resolvedCache[previousKey]!);
+      }
 
-        final resolved = snapshot.data!;
-        Widget imageWidget;
+      return const Center(
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+        ),
+      );
+    }
 
-        if (resolved.path != null && resolved.path!.isNotEmpty) {
-          final file = File(resolved.path!);
-          imageWidget = Image.file(
-            file,
-            key: ValueKey('file_${page.id}_${resolved.path}_${resolved.fileSizeBytes}'),
-            fit: BoxFit.contain,
-            cacheWidth: 1200,
-            gaplessPlayback: true,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('[ScanVault][Review] Image.file error: $error for ${resolved.path}');
-              if (resolved.bytes != null) {
-                return Image.memory(
-                  resolved.bytes!,
-                  key: ValueKey('mem_fallback_${page.id}_${resolved.fileSizeBytes}'),
-                  fit: BoxFit.contain,
-                  cacheWidth: 1200,
-                  gaplessPlayback: true,
-                  filterQuality: FilterQuality.medium,
-                );
-              }
-              return _buildErrorCard(page, 'Failed to display image from disk.');
-            },
-          );
-        } else if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
-          imageWidget = Image.memory(
-            resolved.bytes!,
-            key: ValueKey('mem_${page.id}_${resolved.fileSizeBytes}'),
-            fit: BoxFit.contain,
-            cacheWidth: 1200,
-            gaplessPlayback: true,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildErrorCard(page, 'Failed to decode in-memory image bytes.');
-            },
-          );
-        } else {
-          return _buildErrorCard(page, 'No image content available.');
-        }
+    if (!resolved.isValid) {
+      final err = resolved.errorMessage ?? 'Image could not be resolved.';
+      return _buildErrorCard(page, err);
+    }
 
-        return Center(
-          child: RotatedBox(
-            quarterTurns: rotationQuarterTurns,
-            child: imageWidget,
-          ),
-        );
-      },
+    return _buildResolvedImageWidget(page, resolved);
+  }
+
+  Widget _buildResolvedImageWidget(ScannedPageItem page, ResolvedPageImage resolved) {
+    final rotationQuarterTurns = (page.enhancementParams.rotationDegrees ~/ 90) % 4;
+    Widget imageWidget;
+
+    if (resolved.path != null && resolved.path!.isNotEmpty) {
+      final file = File(resolved.path!);
+      imageWidget = Image.file(
+        file,
+        key: ValueKey('file_${page.id}_v${page.imageVersion}_${resolved.fileSizeBytes}'),
+        fit: BoxFit.contain,
+        cacheWidth: 1200,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('[ScanVault][Review] Image.file error: $error for ${resolved.path}');
+          if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
+            return Image.memory(
+              resolved.bytes!,
+              key: ValueKey('mem_fallback_${page.id}_v${page.imageVersion}_${resolved.fileSizeBytes}'),
+              fit: BoxFit.contain,
+              cacheWidth: 1200,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
+            );
+          }
+          return _buildErrorCard(page, 'Failed to display image from disk.');
+        },
+      );
+    } else if (resolved.bytes != null && resolved.bytes!.isNotEmpty) {
+      imageWidget = Image.memory(
+        resolved.bytes!,
+        key: ValueKey('mem_${page.id}_v${page.imageVersion}_${resolved.fileSizeBytes}'),
+        fit: BoxFit.contain,
+        cacheWidth: 1200,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildErrorCard(page, 'Failed to decode in-memory image bytes.');
+        },
+      );
+    } else {
+      return _buildErrorCard(page, 'No image content available.');
+    }
+
+    return Center(
+      child: RotatedBox(
+        quarterTurns: rotationQuarterTurns,
+        child: imageWidget,
+      ),
     );
   }
 

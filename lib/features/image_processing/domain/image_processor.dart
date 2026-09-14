@@ -25,7 +25,7 @@ class ImageEnhancementParams {
     this.brightness = 0.0,
     this.contrast = 1.0,
     this.shadowRemoval = 0.0,
-    this.filterMode = ScanFilterMode.documentClean,
+    this.filterMode = ScanFilterMode.original,
     this.rotationDegrees = 0,
   });
 
@@ -60,7 +60,7 @@ class ImageEnhancementParams {
       shadowRemoval: (json['shadowRemoval'] as num?)?.toDouble() ?? 0.0,
       filterMode: ScanFilterMode.values.firstWhere(
         (e) => e.name == json['filterMode'],
-        orElse: () => ScanFilterMode.documentClean,
+        orElse: () => ScanFilterMode.original,
       ),
       rotationDegrees: (json['rotationDegrees'] as num?)?.toInt() ?? 0,
     );

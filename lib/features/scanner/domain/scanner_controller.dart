@@ -238,7 +238,10 @@ class ScannerController extends ChangeNotifier {
       final current = _pages[idx];
       final newRotation = (current.enhancementParams.rotationDegrees + 90) % 360;
       final newParams = current.enhancementParams.copyWith(rotationDegrees: newRotation);
-      _pages[idx] = current.copyWith(enhancementParams: newParams);
+      _pages[idx] = current.copyWith(
+        enhancementParams: newParams,
+        imageVersion: current.imageVersion + 1,
+      );
       notifyListeners();
     }
   }

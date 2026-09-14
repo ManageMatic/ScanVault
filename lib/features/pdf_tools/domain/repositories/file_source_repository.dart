@@ -24,10 +24,16 @@ enum FileSourceType {
 
 abstract class FileSourceRepository {
   /// Pick one or multiple PDFs from device storage (SAF)
-  Future<List<File>> pickPdfFromDevice({bool allowMultiple = false});
+  Future<List<File>> pickPdfFromDevice({
+    String userId = 'local_user',
+    bool allowMultiple = false,
+  });
 
   /// Pick one or multiple images from device storage / gallery
-  Future<List<File>> pickImagesFromDevice({bool allowMultiple = false});
+  Future<List<File>> pickImagesFromDevice({
+    String userId = 'local_user',
+    bool allowMultiple = false,
+  });
 
   /// Get documents from ScanVault SQLite vault
   Future<List<Document>> getScanVaultDocuments(String userId);
@@ -39,9 +45,9 @@ abstract class FileSourceRepository {
     required String subfolder,
   });
 
-  /// Validates if a file is a valid PDF document (checks header %PDF-)
+  /// Validates if a file is a valid PDF document (checks header %PDF- and parses)
   Future<bool> validatePdf(File file);
 
-  /// Validates if a file is a valid image
+  /// Validates if a file is a valid decodable image
   Future<bool> validateImage(File file);
 }

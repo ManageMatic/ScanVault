@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:uuid/uuid.dart';
 import 'package:scanvault/core/database/app_database.dart';
 import 'package:scanvault/core/storage/storage_manager_service.dart';
@@ -21,7 +23,10 @@ class LocalFileSourceRepository implements FileSourceRepository {
         _storageManager = storageManager ?? StorageManagerService();
 
   @override
-  Future<List<File>> pickPdfFromDevice({bool allowMultiple = false}) async {
+  Future<List<File>> pickPdfFromDevice({
+    String userId = 'local_user',
+    bool allowMultiple = false,
+  }) async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -37,7 +42,7 @@ class LocalFileSourceRepository implements FileSourceRepository {
           final file = File(platformFile.path!);
           if (await validatePdf(file)) {
             final imported = await importToWorkspace(
-              userId: 'local_user',
+              userId: userId,
               sourceFile: file,
               subfolder: 'imported_pdfs',
             );
@@ -53,7 +58,10 @@ class LocalFileSourceRepository implements FileSourceRepository {
   }
 
   @override
-  Future<List<File>> pickImagesFromDevice({bool allowMultiple = false}) async {
+  Future<List<File>> pickImagesFromDevice({
+    String userId = 'local_user',
+    bool allowMultiple = false,
+  }) async {
     try {
       final validFiles = <File>[];
 
@@ -69,7 +77,7 @@ class LocalFileSourceRepository implements FileSourceRepository {
               final file = File(platformFile.path!);
               if (await validateImage(file)) {
                 final imported = await importToWorkspace(
-                  userId: 'local_user',
+                  userId: userId,
                   sourceFile: file,
                   subfolder: 'imported_images',
                 );
@@ -84,7 +92,7 @@ class LocalFileSourceRepository implements FileSourceRepository {
             final file = File(xFile.path);
             if (await validateImage(file)) {
               final imported = await importToWorkspace(
-                userId: 'local_user',
+                userId: userId,
                 sourceFile: file,
                 subfolder: 'imported_images',
               );
@@ -98,7 +106,7 @@ class LocalFileSourceRepository implements FileSourceRepository {
           final file = File(picked.path);
           if (await validateImage(file)) {
             final imported = await importToWorkspace(
-              userId: 'local_user',
+              userId: userId,
               sourceFile: file,
               subfolder: 'imported_images',
             );
@@ -145,10 +153,23 @@ class LocalFileSourceRepository implements FileSourceRepository {
       final size = await file.length();
       if (size < 10) return false;
 
-      // Check %PDF- magic bytes header
-      final header = await file.openRead(0, 10).first;
-      final str = String.fromCharCodes(header);
-      return str.contains('%PDF-');
+      final bytes = await file.readAsBytes();
+      if (bytes.length < 10) return false;
+
+      // Check %PDF- header
+      final headerStr = String.fromCharCodes(bytes.take(10));
+      if (!headerStr.contains('%PDF-')) return false;
+
+      // Structural validation via Syncfusion PDF engine
+      try {
+        final doc = PdfDocument(inputBytes: bytes);
+        final pageCount = doc.pages.count;
+        doc.dispose();
+        return pageCount > 0;
+      } catch (e) {
+        debugPrint('[ScanVault][Validation] Syncfusion PDF parsing error for ${file.path}: $e');
+        return false;
+      }
     } catch (e) {
       debugPrint('[ScanVault][Validation] PDF validation failed for ${file.path}: $e');
       return false;
@@ -160,15 +181,11 @@ class LocalFileSourceRepository implements FileSourceRepository {
     try {
       if (!await file.exists()) return false;
       final size = await file.length();
-      if (size < 10) return false;
+      if (size <= 0) return false;
 
-      final bytes = await file.openRead(0, 1024).first;
-      // JPEG / PNG / WEBP magic bytes check
-      if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) return true; // JPG
-      if (bytes.length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x4E && bytes[2] == 0x47) return true; // PNG
-      if (bytes.length >= 4 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46) return true; // WEBP (RIFF)
-
-      return true;
+      final bytes = await file.readAsBytes();
+      final decoded = img.decodeImage(bytes);
+      return decoded != null && decoded.width > 0 && decoded.height > 0;
     } catch (e) {
       debugPrint('[ScanVault][Validation] Image validation failed for ${file.path}: $e');
       return false;

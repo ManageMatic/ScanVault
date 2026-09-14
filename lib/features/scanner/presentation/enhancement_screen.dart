@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -141,17 +142,49 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
       params: newParams,
     );
 
+    // Validate pre-write
+    final decoded = img.decodeImage(finalProcessed);
+    if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Filter output is invalid.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
     // Save processed image to disk in stable session workspace
     String? processedPath;
     String? thumbPath;
     try {
-      processedPath = await _workspaceManager.saveProcessedImage(
-        userId: widget.userId,
-        sessionId: widget.page.sessionId,
-        pageId: widget.page.id,
-        bytes: finalProcessed,
-      );
-      thumbPath = p.join(p.dirname(processedPath), 'thumbnail.jpg');
+      if (newParams.filterMode == ScanFilterMode.original &&
+          newParams.brightness == 0.0 &&
+          newParams.contrast == 1.0 &&
+          newParams.shadowRemoval == 0.0) {
+        // If reset to pure original, clear processedImagePath
+        processedPath = null;
+      } else {
+        processedPath = await _workspaceManager.saveProcessedImage(
+          userId: widget.userId,
+          sessionId: widget.page.sessionId,
+          pageId: widget.page.id,
+          bytes: finalProcessed,
+        );
+
+        // Post-write validation
+        final writtenFile = File(processedPath);
+        if (!await writtenFile.exists() || await writtenFile.length() <= 0) {
+          throw Exception('Failed to write processed image file.');
+        }
+        final diskBytes = await writtenFile.readAsBytes();
+        final postDecoded = img.decodeImage(diskBytes);
+        if (postDecoded == null || postDecoded.width <= 0 || postDecoded.height <= 0) {
+          throw Exception('Processed image failed disk re-decoding.');
+        }
+
+        thumbPath = p.join(p.dirname(processedPath), 'thumbnail.jpg');
+      }
     } catch (e) {
       debugPrint('[ScanVault][Enhance] Error saving processed image: $e');
     }
@@ -159,8 +192,9 @@ class _EnhancementScreenState extends State<EnhancementScreen> {
     final updated = widget.page.copyWith(
       processedImagePath: processedPath,
       thumbnailPath: thumbPath ?? widget.page.thumbnailPath,
-      cachedProcessedBytes: finalProcessed,
+      cachedProcessedBytes: processedPath != null ? finalProcessed : null,
       enhancementParams: newParams,
+      imageVersion: widget.page.imageVersion + 1,
     );
 
     ImagePipelineDiagnostics.logStage(stage: 'FILTER_OUTPUT', page: updated);

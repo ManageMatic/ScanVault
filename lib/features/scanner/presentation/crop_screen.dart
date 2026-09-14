@@ -168,6 +168,7 @@ class _CropScreenState extends State<CropScreen> {
     await Future.delayed(const Duration(milliseconds: 50));
 
     try {
+      // 1. Perspective crop using normalized coordinates
       final croppedBytes = ImageProcessor.cropQuadrilateral(
         rawBytes: _imageBytes!,
         topLeft: _normTopLeft,
@@ -178,23 +179,36 @@ class _CropScreenState extends State<CropScreen> {
         displayHeight: 1.0,
       );
 
-      // Validate decoded output
+      // 2. Pre-write validation: verify decoded output
       final decoded = img.decodeImage(croppedBytes);
       if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
         throw Exception('Crop output is not a valid decodable image.');
       }
 
-      // Save working image to disk in stable session workspace
+      // 3. Save working image to disk in stable session workspace
       final workingPath = await _workspaceManager.saveWorkingImage(
         userId: widget.userId,
         sessionId: widget.page.sessionId,
         pageId: widget.page.id,
         bytes: croppedBytes,
       );
+
+      // 4. Post-write validation: re-read from disk and re-verify decodability
+      final writtenFile = File(workingPath);
+      if (!await writtenFile.exists() || await writtenFile.length() <= 0) {
+        throw Exception('Persisted working image file is missing or empty.');
+      }
+      final diskBytes = await writtenFile.readAsBytes();
+      final postDecoded = img.decodeImage(diskBytes);
+      if (postDecoded == null || postDecoded.width <= 0 || postDecoded.height <= 0) {
+        throw Exception('Persisted working image failed disk re-decode validation.');
+      }
+
       final thumbPath = p.join(p.dirname(workingPath), 'thumbnail.jpg');
 
       final updated = widget.page.copyWith(
         workingImagePath: workingPath,
+        processedImagePath: null, // Clear processed image so crop output is canonical
         thumbnailPath: thumbPath,
         cachedProcessedBytes: croppedBytes,
         cropTopLeft: _normTopLeft,
@@ -204,6 +218,7 @@ class _CropScreenState extends State<CropScreen> {
         displayWidth: _imageWidth.toDouble(),
         displayHeight: _imageHeight.toDouble(),
         enhancementParams: widget.page.enhancementParams.copyWith(rotationDegrees: _rotationDegrees),
+        imageVersion: widget.page.imageVersion + 1,
       );
 
       ImagePipelineDiagnostics.logStage(stage: 'CROP_OUTPUT', page: updated);

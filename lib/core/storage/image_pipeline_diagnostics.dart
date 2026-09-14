@@ -13,65 +13,50 @@ class ImagePipelineDiagnostics {
   }) async {
     if (kReleaseMode) return;
 
-    final origFile = File(page.originalImagePath);
-    final origExists = origFile.existsSync();
-    final origSize = origExists ? origFile.lengthSync() : 0;
-    String origDecode = 'N/A';
-    if (origExists && origSize > 0) {
+    final resolvedPath = PageImageResolver.resolveCurrentImagePath(page);
+    final file = resolvedPath != null ? File(resolvedPath) : null;
+    final exists = file?.existsSync() ?? false;
+    final fileSize = exists ? file!.lengthSync() : 0;
+    bool decodeSuccess = false;
+    int width = 0;
+    int height = 0;
+
+    if (exists && fileSize > 0) {
       try {
-        final decoded = img.decodeImage(await origFile.readAsBytes());
-        origDecode = decoded != null ? '${decoded.width}x${decoded.height} (${decoded.numChannels}ch)' : 'FAILED_DECODE';
+        final bytes = await file!.readAsBytes();
+        final decoded = img.decodeImage(bytes);
+        if (decoded != null && decoded.width > 0 && decoded.height > 0) {
+          decodeSuccess = true;
+          width = decoded.width;
+          height = decoded.height;
+        }
       } catch (e) {
-        origDecode = 'ERROR: $e';
+        debugPrint('[ScanVault][Diagnostic] Decode check error: $e');
       }
-    }
-
-    String workInfo = 'null';
-    if (page.workingImagePath != null) {
-      final workFile = File(page.workingImagePath!);
-      final workExists = workFile.existsSync();
-      final workSize = workExists ? workFile.lengthSync() : 0;
-      String workDecode = 'N/A';
-      if (workExists && workSize > 0) {
-        try {
-          final decoded = img.decodeImage(await workFile.readAsBytes());
-          workDecode = decoded != null ? '${decoded.width}x${decoded.height} (${decoded.numChannels}ch)' : 'FAILED_DECODE';
-        } catch (e) {
-          workDecode = 'ERROR: $e';
+    } else if (page.cachedProcessedBytes != null && page.cachedProcessedBytes!.isNotEmpty) {
+      try {
+        final decoded = img.decodeImage(page.cachedProcessedBytes!);
+        if (decoded != null && decoded.width > 0 && decoded.height > 0) {
+          decodeSuccess = true;
+          width = decoded.width;
+          height = decoded.height;
         }
+      } catch (e) {
+        debugPrint('[ScanVault][Diagnostic] In-memory decode error: $e');
       }
-      workInfo = 'exists=$workExists, size=$workSize bytes, decode=$workDecode, path=${page.workingImagePath}';
     }
-
-    String procInfo = 'null';
-    if (page.processedImagePath != null) {
-      final procFile = File(page.processedImagePath!);
-      final procExists = procFile.existsSync();
-      final procSize = procExists ? procFile.lengthSync() : 0;
-      String procDecode = 'N/A';
-      if (procExists && procSize > 0) {
-        try {
-          final decoded = img.decodeImage(await procFile.readAsBytes());
-          procDecode = decoded != null ? '${decoded.width}x${decoded.height} (${decoded.numChannels}ch)' : 'FAILED_DECODE';
-        } catch (e) {
-          procDecode = 'ERROR: $e';
-        }
-      }
-      procInfo = 'exists=$procExists, size=$procSize bytes, decode=$procDecode, path=${page.processedImagePath}';
-    }
-
-    final resolved = PageImageResolver.resolveCurrentImagePath(page);
 
     debugPrint('''
-[SCANVAULT IMAGE DEBUG] ---------------------------------------------
+[SCANVAULT PIPELINE] =====================================
 stage=$stage
 pageId=${page.id}
-sessionId=${page.sessionId}
-original: exists=$origExists, size=$origSize bytes, decode=$origDecode, path=${page.originalImagePath}
-working:  $workInfo
-processed: $procInfo
-RESOLVED CANONICAL PATH: $resolved
----------------------------------------------------------------------
-''');
+version=${page.imageVersion}
+path=${resolvedPath ?? 'none'}
+exists=$exists
+fileSize=$fileSize
+decodeSuccess=$decodeSuccess
+width=$width
+height=$height
+==========================================================''');
   }
 }

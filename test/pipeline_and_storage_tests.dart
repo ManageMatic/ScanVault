@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:scanvault/core/storage/page_image_resolver.dart';
 import 'package:scanvault/core/storage/session_workspace_manager.dart';
 import 'package:scanvault/features/image_processing/domain/image_processor.dart';
@@ -31,6 +32,46 @@ void main() {
     if (await tempTestDir.exists()) {
       await tempTestDir.delete(recursive: true);
     }
+  });
+
+  group('ScannedPageItem Model & copyWith Nullability Tests', () {
+    test('Default filterMode is original and imageVersion starts at 0', () {
+      final page = ScannedPageItem(
+        id: 'p0',
+        originalImagePath: '/path/orig.jpg',
+        capturedAt: DateTime.now(),
+      );
+
+      expect(page.enhancementParams.filterMode, equals(ScanFilterMode.original));
+      expect(page.imageVersion, equals(0));
+      expect(page.isFiltered, isFalse);
+    });
+
+    test('copyWith can explicitly clear nullable fields to null', () {
+      final page = ScannedPageItem(
+        id: 'p0',
+        originalImagePath: '/path/orig.jpg',
+        workingImagePath: '/path/work.jpg',
+        processedImagePath: '/path/proc.jpg',
+        cropTopLeft: const math.Point(0.1, 0.1),
+        capturedAt: DateTime.now(),
+        imageVersion: 1,
+      );
+
+      expect(page.workingImagePath, isNotNull);
+      expect(page.processedImagePath, isNotNull);
+
+      final cleared = page.copyWith(
+        processedImagePath: null,
+        cropTopLeft: null,
+        imageVersion: 2,
+      );
+
+      expect(cleared.processedImagePath, isNull);
+      expect(cleared.cropTopLeft, isNull);
+      expect(cleared.workingImagePath, equals('/path/work.jpg'));
+      expect(cleared.imageVersion, equals(2));
+    });
   });
 
   group('SessionWorkspaceManager & Page Lifecycle Tests', () {
@@ -215,27 +256,34 @@ void main() {
   });
 
   group('LocalFileSourceRepository Validation Tests', () {
-    test('validatePdf detects %PDF- header correctly', () async {
+    test('validatePdf detects parseable Syncfusion PDF correctly', () async {
       final repo = LocalFileSourceRepository();
 
+      final doc = PdfDocument();
+      doc.pages.add();
       final validPdf = File('${tempTestDir.path}/valid.pdf');
-      await validPdf.writeAsString('%PDF-1.7\n%%EOF');
+      await validPdf.writeAsBytes(doc.saveSync());
+      doc.dispose();
 
       final invalidFile = File('${tempTestDir.path}/invalid.txt');
-      await invalidFile.writeAsString('Hello world');
+      await invalidFile.writeAsString('Hello world not a pdf');
 
       expect(await repo.validatePdf(validPdf), isTrue);
       expect(await repo.validatePdf(invalidFile), isFalse);
     });
 
-    test('validateImage detects valid JPEG image bytes', () async {
+    test('validateImage detects valid JPEG and rejects non-image bytes', () async {
       final repo = LocalFileSourceRepository();
       final sampleImg = ImageProcessor.createSampleDocumentBitmap();
 
       final imgFile = File('${tempTestDir.path}/sample.jpg');
       await imgFile.writeAsBytes(sampleImg);
 
+      final textFile = File('${tempTestDir.path}/sample.txt');
+      await textFile.writeAsString('Plain text corrupt file');
+
       expect(await repo.validateImage(imgFile), isTrue);
+      expect(await repo.validateImage(textFile), isFalse);
     });
   });
 
@@ -303,12 +351,16 @@ void main() {
         pageId: 'page_2',
         bytes: croppedP2Bytes,
       );
-      page2 = page2.copyWith(workingImagePath: workPath, cachedProcessedBytes: croppedP2Bytes);
+      page2 = page2.copyWith(
+        workingImagePath: workPath,
+        cachedProcessedBytes: croppedP2Bytes,
+        imageVersion: page2.imageVersion + 1,
+      );
 
       // 3. Filter page 3
       final filteredP3Bytes = ImageProcessor.processImageSync(
         rawBytes: sampleBytes,
-        params: const ImageEnhancementParams(filterMode: ScanFilterMode.documentClean),
+        params: const ImageEnhancementParams(filterMode: ScanFilterMode.grayscale),
       );
       final procPath = await workspaceManager.saveProcessedImage(
         userId: userId,
@@ -316,7 +368,11 @@ void main() {
         pageId: 'page_3',
         bytes: filteredP3Bytes,
       );
-      page3 = page3.copyWith(processedImagePath: procPath, cachedProcessedBytes: filteredP3Bytes);
+      page3 = page3.copyWith(
+        processedImagePath: procPath,
+        cachedProcessedBytes: filteredP3Bytes,
+        imageVersion: page3.imageVersion + 1,
+      );
 
       // 4. Validate canonical resolutions
       final res1 = PageImageResolver.resolveCurrentImagePath(page1);

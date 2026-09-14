@@ -11,12 +11,14 @@ class PdfDocumentPickerSheet extends StatefulWidget {
   final String title;
   final bool allowMultiple;
   final bool allowImagePicker;
+  final String userId;
 
   const PdfDocumentPickerSheet({
     super.key,
     this.title = 'Select Document',
     this.allowMultiple = false,
     this.allowImagePicker = false,
+    this.userId = 'local_user',
   });
 
   static Future<List<File>?> show(
@@ -24,6 +26,7 @@ class PdfDocumentPickerSheet extends StatefulWidget {
     String title = 'Select Document',
     bool allowMultiple = false,
     bool allowImagePicker = false,
+    String userId = 'local_user',
   }) {
     return showModalBottomSheet<List<File>>(
       context: context,
@@ -36,6 +39,7 @@ class PdfDocumentPickerSheet extends StatefulWidget {
         title: title,
         allowMultiple: allowMultiple,
         allowImagePicker: allowImagePicker,
+        userId: userId,
       ),
     );
   }
@@ -81,8 +85,7 @@ class _PdfDocumentPickerSheetState extends State<PdfDocumentPickerSheet> with Si
   Future<void> _loadDocuments() async {
     setState(() => _isLoading = true);
     try {
-      const userId = 'local_user';
-      final docs = await _fileSourceRepo.getScanVaultDocuments(userId);
+      final docs = await _fileSourceRepo.getScanVaultDocuments(widget.userId);
       if (mounted) {
         setState(() {
           _documents = docs;
@@ -100,9 +103,15 @@ class _PdfDocumentPickerSheetState extends State<PdfDocumentPickerSheet> with Si
     try {
       List<File> picked;
       if (widget.allowImagePicker) {
-        picked = await _fileSourceRepo.pickImagesFromDevice(allowMultiple: widget.allowMultiple);
+        picked = await _fileSourceRepo.pickImagesFromDevice(
+          userId: widget.userId,
+          allowMultiple: widget.allowMultiple,
+        );
       } else {
-        picked = await _fileSourceRepo.pickPdfFromDevice(allowMultiple: widget.allowMultiple);
+        picked = await _fileSourceRepo.pickPdfFromDevice(
+          userId: widget.userId,
+          allowMultiple: widget.allowMultiple,
+        );
       }
 
       if (picked.isNotEmpty && mounted) {
