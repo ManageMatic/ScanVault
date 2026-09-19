@@ -175,12 +175,12 @@ export function HomePage() {
 
       {/* 3. Hero Scan Banner (Primary CTA) */}
       {!searchQuery && (
-        <div className="w-full bg-surface border border-border rounded-2xl p-5 xs:p-6 shadow-subtle flex flex-col xs:flex-row items-start xs:items-center justify-between gap-4">
+        <div className="w-full bg-surface border border-border rounded-2xl p-4 xs:p-5 sm:p-6 shadow-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="max-w-md">
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary-soft text-primary mb-2">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary-soft text-primary mb-1.5">
               Scanner Studio
             </span>
-            <h2 className="text-lg xs:text-xl font-bold tracking-tight text-foreground">
+            <h2 className="text-base xs:text-lg sm:text-xl font-bold tracking-tight text-foreground">
               Capture & scan documents
             </h2>
             <p className="text-xs text-muted mt-1 leading-relaxed">
@@ -188,19 +188,19 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 w-full xs:w-auto shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
             <button
               onClick={() => setIsImportSheetOpen(true)}
-              className="btn-secondary flex-1 xs:flex-initial flex items-center justify-center gap-2 shadow-sm"
+              className="btn-secondary h-10 px-4 text-xs font-semibold flex items-center justify-center gap-2 shadow-subtle rounded-xl"
             >
-              <Upload className="w-4 h-4 text-primary" />
+              <Upload className="w-4 h-4 text-primary shrink-0" />
               <span>Import File</span>
             </button>
             <Link
               to="/scan"
-              className="btn-primary flex-1 xs:flex-initial flex items-center justify-center gap-2 shadow-sm"
+              className="btn-primary h-10 px-5 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm rounded-xl"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-4 h-4 shrink-0" />
               <span>Scan</span>
             </Link>
           </div>
