@@ -4,24 +4,27 @@ import {
   FolderInput,
   Star,
   Copy,
-  Share2,
+  Download,
   Trash2,
+  RotateCcw,
 } from 'lucide-react';
-import type { MockDocument } from '@/types/ui';
+import type { LocalDocument } from '@/lib/db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { formatBytes } from '@/lib/mockData';
 
 interface DocumentActionSheetProps {
-  document: MockDocument | null;
+  document: LocalDocument | null;
   isOpen: boolean;
   onClose: () => void;
-  onOpenDoc: (doc: MockDocument) => void;
-  onRename: (doc: MockDocument) => void;
-  onMove: (doc: MockDocument) => void;
-  onToggleFavorite: (doc: MockDocument) => void;
-  onDuplicate: (doc: MockDocument) => void;
-  onShare: (doc: MockDocument) => void;
-  onDelete: (doc: MockDocument) => void;
+  onOpenDoc: (doc: LocalDocument) => void;
+  onRename?: (doc: LocalDocument) => void;
+  onMove?: (doc: LocalDocument) => void;
+  onToggleFavorite?: (doc: LocalDocument) => void;
+  onDuplicate?: (doc: LocalDocument) => void;
+  onDownload?: (doc: LocalDocument) => void;
+  onDelete?: (doc: LocalDocument) => void;
+  onRestore?: (doc: LocalDocument) => void;
+  onPermanentDelete?: (doc: LocalDocument) => void;
 }
 
 export function DocumentActionSheet({
@@ -33,85 +36,136 @@ export function DocumentActionSheet({
   onMove,
   onToggleFavorite,
   onDuplicate,
-  onShare,
+  onDownload,
   onDelete,
+  onRestore,
+  onPermanentDelete,
 }: DocumentActionSheetProps) {
   if (!document) return null;
 
-  const actions = [
-    {
-      id: 'open',
-      label: 'Open Document',
-      icon: FileText,
-      onClick: () => {
-        onClose();
-        onOpenDoc(document);
-      },
-    },
-    {
-      id: 'rename',
-      label: 'Rename Document',
-      icon: Edit2,
-      onClick: () => {
-        onClose();
-        onRename(document);
-      },
-    },
-    {
-      id: 'move',
-      label: 'Move to Folder',
-      icon: FolderInput,
-      onClick: () => {
-        onClose();
-        onMove(document);
-      },
-    },
-    {
-      id: 'favorite',
-      label: document.favorite ? 'Remove from Favorites' : 'Add to Favorites',
-      icon: Star,
-      iconClass: document.favorite ? 'fill-amber-500 text-amber-500' : '',
-      onClick: () => {
-        onClose();
-        onToggleFavorite(document);
-      },
-    },
-    {
-      id: 'duplicate',
-      label: 'Duplicate Document',
-      icon: Copy,
-      onClick: () => {
-        onClose();
-        onDuplicate(document);
-      },
-    },
-    {
-      id: 'share',
-      label: 'Share / Export PDF',
-      icon: Share2,
-      onClick: () => {
-        onClose();
-        onShare(document);
-      },
-    },
-    {
-      id: 'delete',
-      label: 'Delete Document',
-      icon: Trash2,
-      isDestructive: true,
-      onClick: () => {
-        onClose();
-        onDelete(document);
-      },
-    },
-  ];
+  const isTrash = !!document.deletedAt;
+  const fileSize = document.size ?? (document as unknown as { sizeBytes?: number }).sizeBytes ?? 0;
+
+  const actions = isTrash
+    ? [
+        {
+          id: 'restore',
+          label: 'Restore Document',
+          icon: RotateCcw,
+          onClick: () => {
+            onClose();
+            onRestore?.(document);
+          },
+        },
+        {
+          id: 'permanent-delete',
+          label: 'Delete Permanently',
+          icon: Trash2,
+          isDestructive: true,
+          onClick: () => {
+            onClose();
+            onPermanentDelete?.(document);
+          },
+        },
+      ]
+    : [
+        {
+          id: 'open',
+          label: 'Open Document',
+          icon: FileText,
+          onClick: () => {
+            onClose();
+            onOpenDoc(document);
+          },
+        },
+        ...(onRename
+          ? [
+              {
+                id: 'rename',
+                label: 'Rename Document',
+                icon: Edit2,
+                onClick: () => {
+                  onClose();
+                  onRename(document);
+                },
+              },
+            ]
+          : []),
+        ...(onMove
+          ? [
+              {
+                id: 'move',
+                label: 'Move to Folder',
+                icon: FolderInput,
+                onClick: () => {
+                  onClose();
+                  onMove(document);
+                },
+              },
+            ]
+          : []),
+        ...(onToggleFavorite
+          ? [
+              {
+                id: 'favorite',
+                label: document.favorite ? 'Remove from Favorites' : 'Add to Favorites',
+                icon: Star,
+                iconClass: document.favorite ? 'fill-amber-500 text-amber-500' : '',
+                onClick: () => {
+                  onClose();
+                  onToggleFavorite(document);
+                },
+              },
+            ]
+          : []),
+        ...(onDuplicate
+          ? [
+              {
+                id: 'duplicate',
+                label: 'Duplicate Document',
+                icon: Copy,
+                onClick: () => {
+                  onClose();
+                  onDuplicate(document);
+                },
+              },
+            ]
+          : []),
+        ...(onDownload
+          ? [
+              {
+                id: 'download',
+                label: 'Download / Save Copy',
+                icon: Download,
+                onClick: () => {
+                  onClose();
+                  onDownload(document);
+                },
+              },
+            ]
+          : []),
+        ...(onDelete
+          ? [
+              {
+                id: 'delete',
+                label: 'Move to Trash',
+                icon: Trash2,
+                isDestructive: true,
+                onClick: () => {
+                  onClose();
+                  onDelete(document);
+                },
+              },
+            ]
+          : []),
+      ];
 
   return (
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
       title={document.title}
-      description={`${document.pageCount} ${document.pageCount === 1 ? 'page' : 'pages'} • ${formatBytes(document.sizeBytes)}`}
+      description={`${document.pageCount} ${document.pageCount === 1 ? 'page' : 'pages'} • ${formatBytes(fileSize)}`}
     >
       <div className="flex flex-col gap-1 -mx-2">
         {actions.map((action) => {

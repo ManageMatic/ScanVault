@@ -1,31 +1,16 @@
+import type { LocalDocument, LocalFolder } from '@/lib/db';
+
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 export type ViewMode = 'list' | 'grid';
 
 export type DocumentTab = 'all' | 'folders' | 'favorites' | 'recent' | 'trash';
 
-export interface MockDocument {
-  id: string;
-  title: string;
-  folderId?: string | null;
-  mimeType: string;
-  sizeBytes: number;
-  pageCount: number;
-  favorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-  thumbnailColor?: string;
-  category?: 'invoice' | 'contract' | 'notes' | 'medical' | 'receipt' | 'id';
-}
+export type { LocalDocument, LocalFolder };
 
-export interface MockFolder {
-  id: string;
-  name: string;
-  documentCount: number;
-  color?: string;
-  createdAt: string;
-}
+// Alias for backward compatibility if needed
+export type MockDocument = LocalDocument;
+export type MockFolder = LocalFolder & { documentCount?: number };
 
 export interface PdfToolItem {
   id: string;

@@ -1,10 +1,10 @@
 import { Star, MoreVertical } from 'lucide-react';
-import type { MockDocument } from '@/types/ui';
+import type { LocalDocument } from '@/lib/db';
 import { DocumentThumbnail } from './DocumentThumbnail';
 import { formatBytes } from '@/lib/mockData';
 
 interface DocumentCardProps {
-  document: MockDocument;
+  document: LocalDocument;
   viewMode?: 'list' | 'grid';
   onClick?: () => void;
   onFavoriteToggle?: (e: React.MouseEvent) => void;
@@ -22,6 +22,8 @@ export function DocumentCard({
     month: 'short',
     day: 'numeric',
   });
+
+  const fileSize = document.size ?? (document as unknown as { sizeBytes?: number }).sizeBytes ?? 0;
 
   if (viewMode === 'grid') {
     return (
@@ -59,6 +61,8 @@ export function DocumentCard({
         {/* Center Thumbnail */}
         <div className="w-full flex justify-center py-2">
           <DocumentThumbnail
+            thumbnailId={document.thumbnailId}
+            mimeType={document.mimeType}
             pageCount={document.pageCount}
             color={document.thumbnailColor}
             size="lg"
@@ -71,7 +75,7 @@ export function DocumentCard({
             {document.title}
           </h4>
           <div className="flex items-center justify-between mt-1 text-[11px] text-muted">
-            <span>{formatBytes(document.sizeBytes)}</span>
+            <span>{formatBytes(fileSize)}</span>
             <span>{formattedDate}</span>
           </div>
         </div>
@@ -86,6 +90,8 @@ export function DocumentCard({
       className="group relative w-full bg-surface border border-border hover:border-primary/40 rounded-xl p-3 flex items-center gap-3.5 shadow-subtle hover:shadow-card transition-all cursor-pointer select-none min-w-0"
     >
       <DocumentThumbnail
+        thumbnailId={document.thumbnailId}
+        mimeType={document.mimeType}
         pageCount={document.pageCount}
         color={document.thumbnailColor}
         size="md"
@@ -96,9 +102,11 @@ export function DocumentCard({
           {document.title}
         </h4>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-muted">
-          <span>{document.pageCount} {document.pageCount === 1 ? 'page' : 'pages'}</span>
+          <span>
+            {document.pageCount} {document.pageCount === 1 ? 'page' : 'pages'}
+          </span>
           <span>•</span>
-          <span>{formatBytes(document.sizeBytes)}</span>
+          <span>{formatBytes(fileSize)}</span>
           <span>•</span>
           <span>{formattedDate}</span>
         </div>

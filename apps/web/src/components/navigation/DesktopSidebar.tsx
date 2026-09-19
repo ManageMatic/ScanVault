@@ -1,8 +1,12 @@
 import { Home, FileText, Camera, Wrench, Settings, HardDrive } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { useStorageUsage } from '@/lib/db';
+import { formatBytes } from '@/lib/mockData';
 
 export function DesktopSidebar() {
+  const { usage, percentUsed, isSupported } = useStorageUsage();
+
   const navItems = [
     { to: '/', label: 'Home', icon: Home },
     { to: '/documents', label: 'Documents', icon: FileText },
@@ -55,15 +59,23 @@ export function DesktopSidebar() {
 
       {/* Bottom Vault Status */}
       <div className="p-3.5 bg-surface-secondary rounded-xl border border-border mt-auto">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground mb-1">
-          <HardDrive className="w-3.5 h-3.5 text-primary" />
-          <span>Local Storage</span>
+        <div className="flex items-center justify-between text-xs font-semibold text-foreground mb-1">
+          <div className="flex items-center gap-1.5">
+            <HardDrive className="w-3.5 h-3.5 text-primary" />
+            <span>Local Vault</span>
+          </div>
+          {isSupported && usage > 0 && (
+            <span className="text-[10px] text-muted font-mono">{formatBytes(usage)}</span>
+          )}
         </div>
         <p className="text-[11px] text-muted mb-2">
           Air-gapped offline storage
         </p>
         <div className="w-full bg-border rounded-full h-1.5 overflow-hidden">
-          <div className="bg-primary h-full rounded-full w-1/4" />
+          <div
+            className="bg-primary h-full rounded-full transition-all duration-300"
+            style={{ width: `${isSupported && percentUsed > 0 ? Math.max(5, percentUsed) : 15}%` }}
+          />
         </div>
       </div>
     </aside>

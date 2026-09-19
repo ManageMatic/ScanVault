@@ -1,10 +1,25 @@
 import { useState } from 'react';
-import { Search, Camera, Plus, ArrowRight, FolderPlus, Wrench, HardDrive } from 'lucide-react';
+import {
+  Search,
+  Camera,
+  ArrowRight,
+  FolderPlus,
+  Wrench,
+  HardDrive,
+  Upload,
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { INITIAL_MOCK_DOCUMENTS, PDF_TOOLS } from '@/lib/mockData';
-import type { MockDocument } from '@/types/ui';
+import { PDF_TOOLS, formatBytes } from '@/lib/mockData';
+import {
+  useDocuments,
+  useStorageUsage,
+  fileRepository,
+  type LocalDocument,
+} from '@/lib/db';
 import { DocumentCard } from '@/components/documents/DocumentCard';
 import { DocumentActionSheet } from '@/components/documents/DocumentActionSheet';
+import { ImportDocumentSheet } from '@/components/documents/ImportDocumentSheet';
+import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth';
@@ -14,8 +29,26 @@ export function HomePage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [documents, setDocuments] = useState<MockDocument[]>(INITIAL_MOCK_DOCUMENTS);
-  const [selectedDoc, setSelectedDoc] = useState<MockDocument | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<LocalDocument | null>(null);
+  const [isImportSheetOpen, setIsImportSheetOpen] = useState(false);
+
+  const [docToRename, setDocToRename] = useState<LocalDocument | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  const {
+    documents: recentDocs,
+    allCount,
+    toggleFavorite,
+    renameDocument,
+    softDeleteDocument,
+    duplicateDocument,
+  } = useDocuments({
+    tab: 'all',
+    search: searchQuery,
+    sortBy: 'opened-desc',
+  });
+
+  const { usage, isSupported } = useStorageUsage();
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -24,29 +57,86 @@ export function HomePage() {
     return 'Good evening';
   })();
 
-  const filteredDocs = documents.filter((doc) =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase().trim())
-  );
-
-  const handleToggleFavorite = (doc: MockDocument) => {
-    setDocuments((prev) =>
-      prev.map((d) => (d.id === doc.id ? { ...d, favorite: !d.favorite } : d))
-    );
-    toast({
-      title: doc.favorite ? 'Removed from favorites' : 'Added to favorites',
-      description: doc.title,
-      type: 'success',
-    });
+  const handleToggleFavorite = async (doc: LocalDocument) => {
+    try {
+      const isFav = await toggleFavorite(doc.id);
+      toast({
+        title: isFav ? 'Added to favorites' : 'Removed from favorites',
+        description: doc.title,
+        type: 'success',
+      });
+    } catch {
+      toast({ title: 'Error updating favorite', type: 'error' });
+    }
   };
 
-  const handleDelete = (doc: MockDocument) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-    toast({
-      title: 'Document moved to trash',
-      description: doc.title,
-      type: 'info',
-    });
+  const handleSoftDelete = async (doc: LocalDocument) => {
+    try {
+      await softDeleteDocument(doc.id);
+      toast({
+        title: 'Document moved to Trash',
+        description: doc.title,
+        type: 'info',
+      });
+    } catch {
+      toast({ title: 'Error moving document to trash', type: 'error' });
+    }
   };
+
+  const handleDuplicate = async (doc: LocalDocument) => {
+    try {
+      const copy = await duplicateDocument(doc.id);
+      if (copy) {
+        toast({
+          title: 'Document duplicated',
+          description: copy.title,
+          type: 'success',
+        });
+      }
+    } catch {
+      toast({ title: 'Error duplicating document', type: 'error' });
+    }
+  };
+
+  const handleDownload = async (doc: LocalDocument) => {
+    try {
+      const fileData = await fileRepository.getFileByDocumentId(doc.id);
+      if (!fileData) {
+        toast({ title: 'File data not found', type: 'error' });
+        return;
+      }
+      const url = URL.createObjectURL(fileData.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.title;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Download started', description: doc.title, type: 'success' });
+    } catch {
+      toast({ title: 'Download failed', type: 'error' });
+    }
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docToRename || !renameValue.trim()) return;
+
+    try {
+      await renameDocument(docToRename.id, renameValue.trim());
+      toast({
+        title: 'Document renamed',
+        description: renameValue.trim(),
+        type: 'success',
+      });
+      setDocToRename(null);
+    } catch (err) {
+      toast({ title: 'Rename failed', description: (err as Error).message, type: 'error' });
+    }
+  };
+
+  const displayedDocs = recentDocs.slice(0, 5);
 
   return (
     <div className="w-full flex flex-col gap-6 animate-fade-in">
@@ -54,7 +144,8 @@ export function HomePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
-            {greeting}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+            {greeting}
+            {user?.name ? `, ${user.name.split(' ')[0]}` : ''}
           </h1>
           <p className="text-xs text-muted mt-0.5">
             Your documents are organized and ready offline
@@ -69,7 +160,7 @@ export function HomePage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search documents, tags, or notes..."
+          placeholder="Search documents by title..."
           className="form-input pl-10 pr-12 text-xs xs:text-sm"
         />
         {searchQuery && (
@@ -97,29 +188,38 @@ export function HomePage() {
             </p>
           </div>
 
-          <Link
-            to="/scan"
-            className="btn-primary w-full xs:w-auto shrink-0 flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Scan Document</span>
-          </Link>
+          <div className="flex items-center gap-2 w-full xs:w-auto shrink-0">
+            <button
+              onClick={() => setIsImportSheetOpen(true)}
+              className="btn-secondary flex-1 xs:flex-initial flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Upload className="w-4 h-4 text-primary" />
+              <span>Import File</span>
+            </button>
+            <Link
+              to="/scan"
+              className="btn-primary flex-1 xs:flex-initial flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Scan</span>
+            </Link>
+          </div>
         </div>
       )}
 
       {/* 4. Quick Actions Ribbon */}
       {!searchQuery && (
         <div className="grid grid-cols-2 xs:grid-cols-4 gap-3">
-          <Link
-            to="/scan"
+          <button
+            onClick={() => setIsImportSheetOpen(true)}
             className="bg-surface hover:bg-surface-secondary border border-border rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-subtle transition-all active:scale-[0.98]"
           >
             <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center mb-1.5">
-              <Plus className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
             </div>
-            <span className="text-xs font-semibold text-foreground">New Scan</span>
-            <span className="text-[10px] text-muted">Camera/Upload</span>
-          </Link>
+            <span className="text-xs font-semibold text-foreground">Import File</span>
+            <span className="text-[10px] text-muted">PDF or Image</span>
+          </button>
 
           <Link
             to="/documents"
@@ -129,7 +229,7 @@ export function HomePage() {
               <FolderPlus className="w-4 h-4" />
             </div>
             <span className="text-xs font-semibold text-foreground">All Vault</span>
-            <span className="text-[10px] text-muted">5 Documents</span>
+            <span className="text-[10px] text-muted">{allCount} Documents</span>
           </Link>
 
           <Link
@@ -143,13 +243,18 @@ export function HomePage() {
             <span className="text-[10px] text-muted">8 Utilities</span>
           </Link>
 
-          <div className="bg-surface border border-border rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-subtle">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5 font-mono text-xs font-bold">
+          <Link
+            to="/settings"
+            className="bg-surface hover:bg-surface-secondary border border-border rounded-xl p-3.5 flex flex-col items-center justify-center text-center shadow-subtle transition-all active:scale-[0.98]"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
               <HardDrive className="w-4 h-4" />
             </div>
             <span className="text-xs font-semibold text-foreground">Local Vault</span>
-            <span className="text-[10px] text-muted">17 MB Used</span>
-          </div>
+            <span className="text-[10px] text-muted">
+              {isSupported && usage > 0 ? `${formatBytes(usage)} Used` : 'Air-gapped'}
+            </span>
+          </Link>
         </div>
       )}
 
@@ -157,9 +262,9 @@ export function HomePage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-foreground tracking-tight">
-            {searchQuery ? `Search Results (${filteredDocs.length})` : 'Recent Documents'}
+            {searchQuery ? `Search Results (${recentDocs.length})` : 'Recent Documents'}
           </h3>
-          {!searchQuery && (
+          {!searchQuery && allCount > 0 && (
             <Link
               to="/documents"
               className="text-xs font-semibold text-primary hover:text-primary-hover flex items-center gap-1"
@@ -170,9 +275,9 @@ export function HomePage() {
           )}
         </div>
 
-        {filteredDocs.length > 0 ? (
+        {displayedDocs.length > 0 ? (
           <div className="flex flex-col gap-2.5">
-            {filteredDocs.map((doc) => (
+            {displayedDocs.map((doc) => (
               <DocumentCard
                 key={doc.id}
                 document={doc}
@@ -185,14 +290,15 @@ export function HomePage() {
         ) : (
           <EmptyState
             icon={Search}
-            title="No documents found"
+            title={searchQuery ? 'No documents found' : 'No documents yet'}
             description={
               searchQuery
-                ? `No documents match "${searchQuery}". Try a different keyword.`
-                : 'Your vault is empty. Capture your first document now.'
+                ? `No documents match "${searchQuery}".`
+                : 'Import a PDF or image, or scan your first document.'
             }
-            actionLabel={searchQuery ? 'Clear Search' : 'Scan First Document'}
-            onAction={() => (searchQuery ? setSearchQuery('') : navigate('/scan'))}
+            actionLabel={searchQuery ? 'Clear Search' : 'Import Document'}
+            actionIcon={searchQuery ? undefined : Upload}
+            onAction={() => (searchQuery ? setSearchQuery('') : setIsImportSheetOpen(true))}
           />
         )}
       </div>
@@ -244,26 +350,63 @@ export function HomePage() {
         </div>
       )}
 
+      {/* Import Document Sheet */}
+      <ImportDocumentSheet
+        isOpen={isImportSheetOpen}
+        onClose={() => setIsImportSheetOpen(false)}
+      />
+
+      {/* Rename Document Modal */}
+      <Modal
+        isOpen={!!docToRename}
+        onClose={() => setDocToRename(null)}
+        title="Rename Document"
+        description="Enter a new title for this document."
+      >
+        <form onSubmit={handleRenameSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1.5">
+              Document Title
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              className="form-input"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setDocToRename(null)}
+              className="btn-secondary text-xs h-10 px-4"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary text-xs h-10 px-5">
+              Save
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       {/* Contextual Action Sheet */}
       <DocumentActionSheet
         document={selectedDoc}
         isOpen={!!selectedDoc}
         onClose={() => setSelectedDoc(null)}
         onOpenDoc={(doc) => navigate(`/documents/${doc.id}`)}
-        onRename={(doc) =>
-          toast({ title: 'Rename action', description: doc.title, type: 'info' })
-        }
-        onMove={(doc) =>
-          toast({ title: 'Move to folder', description: doc.title, type: 'info' })
-        }
+        onRename={(doc) => {
+          setDocToRename(doc);
+          setRenameValue(doc.title);
+        }}
         onToggleFavorite={handleToggleFavorite}
-        onDuplicate={(doc) =>
-          toast({ title: 'Document duplicated', description: doc.title, type: 'success' })
-        }
-        onShare={(doc) =>
-          toast({ title: 'Ready to share PDF', description: doc.title, type: 'info' })
-        }
-        onDelete={handleDelete}
+        onDuplicate={handleDuplicate}
+        onDownload={handleDownload}
+        onDelete={handleSoftDelete}
       />
     </div>
   );

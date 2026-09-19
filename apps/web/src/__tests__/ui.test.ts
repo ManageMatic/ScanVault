@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_MOCK_DOCUMENTS, INITIAL_MOCK_FOLDERS, PDF_TOOLS, formatBytes } from '../lib/mockData';
 
-describe('Module 02 UI & Mock Data Layer', () => {
+describe('Module 02 UI & Data Layer', () => {
   it('loads mock documents with valid properties', () => {
     expect(INITIAL_MOCK_DOCUMENTS.length).toBeGreaterThan(0);
     for (const doc of INITIAL_MOCK_DOCUMENTS) {
       expect(doc.id).toBeDefined();
       expect(doc.title).toContain('.pdf');
       expect(doc.pageCount).toBeGreaterThan(0);
-      expect(doc.sizeBytes).toBeGreaterThan(0);
+      expect(doc.size).toBeGreaterThan(0);
     }
   });
 

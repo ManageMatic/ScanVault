@@ -1,21 +1,41 @@
+import { useState } from 'react';
 import {
   Shield,
   HardDrive,
   Sliders,
   Info,
-  Trash2,
   Lock,
   LogOut,
   FileCheck2,
+  Database,
+  CheckCircle2,
 } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth';
+import { formatBytes } from '@/lib/mockData';
+import {
+  useStorageUsage,
+  documentService,
+  requestPersistentStorage,
+} from '@/lib/db';
 import { useNavigate } from 'react-router-dom';
 
 export function SettingsPage() {
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const {
+    usage,
+    available,
+    quota,
+    percentUsed,
+    isSupported,
+    isPersisted,
+    refresh: refreshStorage,
+  } = useStorageUsage();
+
+  const [isCleaning, setIsCleaning] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -35,23 +55,59 @@ export function SettingsPage() {
     }
   };
 
-  const handleClearCache = () => {
-    toast({
-      title: 'Cache Cleared',
-      description: 'Local workspace cache refreshed.',
-      type: 'success',
-    });
+  const handleCleanOrphans = async () => {
+    if (!user?.id) return;
+    try {
+      setIsCleaning(true);
+      const res = await documentService.cleanupOrphanedData(user.id);
+      await refreshStorage();
+      toast({
+        title: 'Maintenance Complete',
+        description: `Removed ${res.orphanedFiles} orphaned files and ${res.orphanedThumbnails} unused thumbnails.`,
+        type: 'success',
+      });
+    } catch (err) {
+      toast({
+        title: 'Cleanup failed',
+        description: (err as Error).message,
+        type: 'error',
+      });
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  const handleRequestPersist = async () => {
+    try {
+      const granted = await requestPersistentStorage();
+      await refreshStorage();
+      if (granted) {
+        toast({
+          title: 'Persistent Storage Granted',
+          description: 'Your browser will not evict local documents during low-disk conditions.',
+          type: 'success',
+        });
+      } else {
+        toast({
+          title: 'Persistence Request',
+          description: 'Browser did not grant persistent storage. Documents remain saved in IndexedDB.',
+          type: 'info',
+        });
+      }
+    } catch {
+      toast({ title: 'Could not request persistence', type: 'error' });
+    }
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-fade-in">
+    <div className="w-full flex flex-col gap-6 animate-fade-in pb-12">
       {/* 1. Header */}
       <div>
         <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
           Settings
         </h1>
         <p className="text-xs text-muted mt-0.5">
-          Manage your account, scanner defaults, and offline storage
+          Manage your account, scanner defaults, and local IndexedDB storage
         </p>
       </div>
 
@@ -118,39 +174,70 @@ export function SettingsPage() {
             <div>
               <h3 className="text-xs font-semibold text-foreground">Guest Mode</h3>
               <p className="text-[11px] text-muted mt-0.5">
-                Sign in to sync your encrypted documents across devices.
+                Sign in to manage and isolate your encrypted offline documents.
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* 3. Storage Section */}
-      <div className="bg-surface border border-border rounded-xl p-4 xs:p-5 shadow-subtle flex flex-col gap-3">
+      {/* 3. Real Local Storage Telemetry */}
+      <div className="bg-surface border border-border rounded-xl p-4 xs:p-5 shadow-subtle flex flex-col gap-4">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-2">
           <HardDrive className="w-4 h-4 text-primary" />
-          <span>Local Storage</span>
+          <span>Local Device Storage (IndexedDB)</span>
         </h2>
 
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">IndexedDB Vault Used</span>
-            <span className="font-semibold text-foreground font-mono">17.2 MB</span>
-          </div>
-          <div className="w-full bg-surface-secondary rounded-full h-2 overflow-hidden border border-border">
-            <div className="bg-primary h-full rounded-full w-[15%]" />
-          </div>
+        {isSupported ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">Storage Used</span>
+              <span className="font-semibold text-foreground font-mono">
+                {formatBytes(usage)} / {formatBytes(quota)} ({percentUsed}%)
+              </span>
+            </div>
+            <div className="w-full bg-surface-secondary rounded-full h-2 overflow-hidden border border-border">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(2, percentUsed))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted">
+              <span>{formatBytes(available)} available space</span>
+              {isPersisted ? (
+                <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Storage Persisted
+                </span>
+              ) : (
+                <button
+                  onClick={handleRequestPersist}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Request Persistent Storage
+                </button>
+              )}
+            </div>
 
-          <div className="pt-2">
-            <button
-              onClick={handleClearCache}
-              className="touch-target px-3.5 py-2 bg-surface hover:bg-destructive-soft text-muted hover:text-destructive text-xs font-semibold rounded-lg border border-border transition-colors flex items-center gap-2"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear Temporary Cache</span>
-            </button>
+            <div className="pt-2 border-t border-border flex flex-wrap gap-2">
+              <button
+                onClick={handleCleanOrphans}
+                disabled={isCleaning}
+                className="touch-target px-3.5 py-2 bg-surface hover:bg-surface-secondary text-foreground text-xs font-semibold rounded-lg border border-border transition-colors flex items-center gap-2 shadow-subtle"
+              >
+                <Database className="w-3.5 h-3.5 text-primary" />
+                <span>{isCleaning ? 'Cleaning...' : 'Purge Orphaned Blobs'}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-surface-secondary border border-border rounded-lg p-3.5 text-xs text-muted">
+            <p>Storage information isn't available in this browser.</p>
+            <p className="text-[11px] mt-1 text-subtle">
+              Your documents continue to be saved securely in browser IndexedDB.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 4. Scanner Preferences */}
@@ -196,9 +283,9 @@ export function SettingsPage() {
 
         <div className="text-xs text-muted space-y-1">
           <p className="font-semibold text-foreground">ScanVault — Mobile Document Workspace</p>
-          <p>Version 0.3.0</p>
+          <p>Version 0.4.0 (Module 04: Real Local Document Vault)</p>
           <p className="text-[11px] text-muted pt-1">
-            Air-gapped, privacy-first client-side document scanner & studio with encrypted session persistence.
+            Local-first, air-gapped document workspace. All document files and thumbnails are stored securely in your device's IndexedDB.
           </p>
         </div>
       </div>
