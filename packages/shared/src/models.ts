@@ -1,4 +1,18 @@
 /**
+ * Authenticated User DTO
+ */
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+  emailVerified: string | null;
+  accounts?: Array<{ provider: string; providerAccountId?: string }>;
+  providers?: string[];
+  createdAt?: string;
+}
+
+/**
  * User Summary DTO
  */
 export interface UserSummary {
@@ -22,7 +36,7 @@ export interface FolderSummary {
 }
 
 /**
- * Document Summary DTO (Metadata only - binaries stored in IndexedDB/Object storage)
+ * Document Summary DTO
  */
 export interface DocumentSummary {
   id: string;

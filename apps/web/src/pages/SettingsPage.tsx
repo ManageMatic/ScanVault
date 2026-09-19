@@ -8,13 +8,36 @@ import {
   Info,
   Trash2,
   Lock,
+  LogOut,
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
+import { useAuth } from '@/lib/auth';
+import { useNavigate } from 'react-router-dom';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: 'Signed Out',
+        description: 'You have been securely signed out.',
+        type: 'info',
+      });
+      navigate('/login');
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out. Please try again.',
+        type: 'error',
+      });
+    }
+  };
 
   const handleClearCache = () => {
     toast({
@@ -82,24 +105,71 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* 3. Account & Authentication (Module 03 Placeholder) */}
+      {/* 3. Account & Authentication */}
       <div className="bg-surface border border-border rounded-2xl p-4 xs:p-5 shadow-sm">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-primary" />
-          <span>Account & Security</span>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" />
+            <span>Account & Security</span>
+          </div>
+          {user && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              Active Session
+            </span>
+          )}
         </h3>
 
-        <div className="bg-surface-secondary/70 border border-border rounded-xl p-3.5 flex items-start gap-3">
-          <Lock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-xs font-bold text-foreground">
-              Google OAuth & Cloud Sync (Module 03)
-            </h4>
-            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-              Google authentication and encrypted session cookie management are scheduled for implementation in Module 03.
-            </p>
+        {user ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-surface-secondary/70 border border-border">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name || user.email}
+                  className="w-11 h-11 rounded-full object-cover border border-border"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center border border-primary/20">
+                  {(user.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-foreground truncate">
+                  {user.name || 'ScanVault User'}
+                </h4>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-muted-foreground capitalize">
+                    Provider: {user.accounts?.[0]?.provider || user.providers?.[0] || 'Password'}
+                  </span>
+                  {user.emailVerified ? (
+                    <span className="text-[10px] text-emerald-500 font-medium">Verified</span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleLogout}
+                className="touch-target flex-1 px-4 py-2.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-semibold rounded-xl border border-destructive/20 transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-surface-secondary/70 border border-border rounded-xl p-3.5 flex items-start gap-3">
+            <Lock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-bold text-foreground">Guest Mode</h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Sign in to sync your encrypted documents across devices.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Local Vault & Storage */}

@@ -2,6 +2,7 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { apiRouter } from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { env } from './config/env.js';
@@ -17,7 +18,7 @@ export function createApp(): Express {
     })
   );
 
-  // CORS configuration
+  // CORS configuration allowing credentials & cookies
   app.use(
     cors({
       origin: true,
@@ -29,6 +30,9 @@ export function createApp(): Express {
   if (env.NODE_ENV !== 'test') {
     app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
   }
+
+  // Cookie parsing
+  app.use(cookieParser());
 
   // JSON Body parsing
   app.use(express.json({ limit: '10mb' }));
