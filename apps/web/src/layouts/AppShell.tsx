@@ -18,8 +18,8 @@ export function AppShell({ children }: AppShellProps) {
         {/* Mobile Header */}
         <MobileHeader />
 
-        {/* Scrollable Page Viewport */}
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 xs:px-5 py-5 xs:py-6 pb-28 lg:pb-8 flex flex-col">
+        {/* Scrollable Page Viewport with generous bottom padding on mobile for fixed navbar and floating scan trigger */}
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 xs:px-5 py-5 xs:py-6 pb-36 lg:pb-10 flex flex-col">
           {children}
         </main>
 
