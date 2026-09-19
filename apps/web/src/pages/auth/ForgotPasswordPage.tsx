@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -44,109 +45,105 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 selection:bg-[var(--color-primary-light)]">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link
-          to="/login"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-6 transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-          Back to sign in
-        </Link>
-
-        {/* Logo and Header */}
-        <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] shadow-inner">
-            <ShieldCheck className="w-6 h-6" />
+    <div className="min-h-screen w-full flex items-center justify-center p-4 xs:p-6 bg-background text-foreground">
+      <div className="w-full max-w-md bg-surface border border-border sm:rounded-2xl p-6 xs:p-8 sm:shadow-card flex flex-col gap-6 animate-fade-in">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-4">
+            <BrandLogo size="lg" showText={false} />
           </div>
+          <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
+            Forgot your password?
+          </h1>
+          <p className="text-xs xs:text-sm text-muted mt-1 leading-relaxed max-w-xs">
+            Enter your email and we'll help you get back into your account.
+          </p>
         </div>
-        <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-[var(--color-text)]">
-          Reset your password
-        </h1>
-        <p className="mt-1 text-center text-xs text-[var(--color-text-muted)] max-w-xs mx-auto">
-          Enter your registered email address and we'll send you instructions to reset your password.
-        </p>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="glass-card p-6 sm:p-8 rounded-3xl border border-[var(--color-border)] shadow-xl relative overflow-hidden">
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-xs flex items-center gap-2.5 animate-fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+        {error && (
+          <div className="w-full bg-destructive-soft border border-destructive/20 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-destructive">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="flex-1 leading-relaxed font-medium">{error}</p>
+          </div>
+        )}
+
+        {submitted ? (
+          <div className="text-center py-3 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-          )}
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Check your email</h3>
+              <p className="text-xs text-muted mt-1 leading-relaxed">
+                If an account exists for <strong className="text-foreground">{email}</strong>, we've sent password reset instructions.
+              </p>
+            </div>
 
-          {submitted ? (
-            <div className="text-center py-4 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-[var(--color-text)]">Check your inbox</h3>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
-                  If an account exists for <strong className="text-[var(--color-text)]">{email}</strong>, you will receive password reset instructions.
-                </p>
-              </div>
-
-              {devResetToken && (
-                <div className="p-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-xl text-left text-xs text-[var(--color-text-muted)]">
-                  <div className="font-medium text-[var(--color-primary)] mb-1">Development Mode Link:</div>
-                  <Link
-                    to={`/reset-password?token=${devResetToken}`}
-                    className="text-[var(--color-primary)] underline break-all hover:opacity-80"
-                  >
-                    Click here to reset your password now
-                  </Link>
-                </div>
-              )}
-
-              <div className="pt-2">
+            {devResetToken && (
+              <div className="p-3 bg-surface-secondary border border-border rounded-xl text-left text-xs text-muted">
+                <div className="font-semibold text-primary mb-1">Development Mode Reset Link:</div>
                 <Link
-                  to="/login"
-                  className="btn btn-secondary w-full text-xs font-semibold py-2.5"
+                  to={`/reset-password?token=${devResetToken}`}
+                  className="text-primary hover:underline break-all"
                 >
-                  Return to Sign In
+                  Click here to set a new password
                 </Link>
               </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-colors"
-                  />
-                </div>
-              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 mt-2"
+            <div className="pt-2">
+              <Link
+                to="/login"
+                className="btn-secondary w-full"
               >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Send Reset Instructions</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-        </div>
+                Return to sign in
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="form-input pl-10"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full mt-1"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Sending Link...</span>
+                </div>
+              ) : (
+                <span>Send reset link</span>
+              )}
+            </button>
+
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center gap-2 text-xs font-medium text-muted hover:text-foreground pt-2 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to sign in</span>
+            </Link>
+          </form>
+        )}
       </div>
     </div>
   );

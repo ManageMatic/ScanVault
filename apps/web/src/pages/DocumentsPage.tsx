@@ -43,7 +43,7 @@ export function DocumentsPage() {
 
     if (activeTab === 'favorites') return doc.favorite;
     if (activeTab === 'recent') return true;
-    if (activeTab === 'trash') return false; // Mock trash empty by default
+    if (activeTab === 'trash') return false;
     return true;
   });
 
@@ -75,7 +75,7 @@ export function DocumentsPage() {
       id: `folder-${Date.now()}`,
       name: newFolderName.trim(),
       documentCount: 0,
-      color: '#008378',
+      color: '#4F46E5',
       createdAt: new Date().toISOString(),
     };
 
@@ -98,35 +98,35 @@ export function DocumentsPage() {
   ];
 
   return (
-    <div className="w-full flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5 animate-fade-in">
       {/* 1. Header Toolbar */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl xs:text-2xl font-extrabold tracking-tight text-foreground">
-            Document Vault
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
+            Documents
+          </h1>
+          <p className="text-xs text-muted mt-0.5">
             {documents.length} offline documents stored locally
           </p>
         </div>
 
         {/* Action Controls: New Folder & View Toggle */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFolderModalOpen(true)}
-            className="touch-target px-3 bg-surface hover:bg-surface-secondary text-foreground text-xs font-semibold rounded-xl border border-border transition-all flex items-center gap-1.5 shadow-sm"
+            className="touch-target px-3.5 bg-surface hover:bg-surface-secondary text-foreground text-xs font-semibold rounded-xl border border-border transition-all flex items-center gap-1.5 shadow-subtle"
           >
             <FolderPlus className="w-4 h-4 text-primary" />
             <span className="hidden xs:inline">New Folder</span>
           </button>
 
-          <div className="flex items-center bg-surface border border-border rounded-xl p-0.5 shadow-sm">
+          <div className="flex items-center bg-surface border border-border rounded-xl p-0.5 shadow-subtle">
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-lg transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-subtle hover:text-foreground'
               }`}
               aria-label="List view"
             >
@@ -136,8 +136,8 @@ export function DocumentsPage() {
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-colors ${
                 viewMode === 'grid'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-subtle hover:text-foreground'
               }`}
               aria-label="Grid view"
             >
@@ -149,17 +149,17 @@ export function DocumentsPage() {
 
       {/* 2. Search Filter */}
       <div className="relative w-full">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={`Search ${activeTab === 'folders' ? 'folders' : 'documents'}...`}
-          className="touch-target w-full bg-surface border border-border rounded-xl pl-10 pr-4 text-xs xs:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all shadow-sm"
+          className="form-input pl-10 text-xs xs:text-sm"
         />
       </div>
 
-      {/* 3. Horizontal Mobile Navigation Tabs */}
+      {/* 3. Horizontal Navigation Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 select-none">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -170,8 +170,8 @@ export function DocumentsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`touch-target px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                  : 'bg-surface text-muted-foreground hover:text-foreground border border-border'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-surface text-muted hover:text-foreground border border-border'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -180,8 +180,8 @@ export function DocumentsPage() {
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                     isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-surface-secondary text-muted-foreground'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-surface-secondary text-muted'
                   }`}
                 >
                   {tab.count}
@@ -194,7 +194,6 @@ export function DocumentsPage() {
 
       {/* 4. Tab Content */}
       {activeTab === 'folders' ? (
-        /* Folders View */
         folders.length > 0 ? (
           <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
             {folders.map((folder) => (
@@ -222,14 +221,12 @@ export function DocumentsPage() {
           />
         )
       ) : activeTab === 'trash' ? (
-        /* Trash Tab */
         <EmptyState
           icon={Trash2}
           title="Trash is empty"
-          description="Deleted documents will appear here before being permanently cleared."
+          description="Deleted documents will appear here before being permanently removed."
         />
       ) : (
-        /* Documents View (All, Favorites, Recent) */
         filteredDocuments.length > 0 ? (
           <div
             className={
@@ -284,8 +281,8 @@ export function DocumentsPage() {
               autoFocus
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="e.g., Medical Receipts 2026"
-              className="touch-target w-full bg-surface-secondary border border-border rounded-xl px-3.5 text-xs xs:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              placeholder="e.g., Invoices 2026"
+              className="form-input"
             />
           </div>
 
@@ -293,13 +290,13 @@ export function DocumentsPage() {
             <button
               type="button"
               onClick={() => setIsFolderModalOpen(false)}
-              className="touch-target px-4 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-xl transition-colors"
+              className="btn-secondary text-xs h-10 px-4"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="touch-target px-5 bg-primary text-primary-foreground hover:opacity-90 active:scale-95 text-xs font-bold rounded-xl shadow-md transition-all"
+              className="btn-primary text-xs h-10 px-5"
             >
               Create Folder
             </button>

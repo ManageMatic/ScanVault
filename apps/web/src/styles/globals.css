@@ -4,34 +4,42 @@
 
 @layer base {
   :root {
-    /* ScanVault Unified Design System - Single Cohesive Aesthetic */
-    --background: 222 47% 7%;        /* #0a0f19 - Deep Midnight Slate */
-    --surface: 222 36% 11%;          /* #111827 - Elevated Card */
-    --surface-secondary: 222 28% 15%;/* #182234 - Floating Surface / Input */
-    --surface-tertiary: 222 24% 20%; /* #222f46 - Active / Hover Item */
-    --foreground: 210 40% 98%;       /* #f8fafc - Crisp White Heading/Body */
-    --muted: 215 20% 65%;            /* #94a3b8 - Secondary Text */
-    --muted-foreground: 215 16% 50%; /* #64748b - Subtle Metadata */
-    --border: 222 22% 18%;           /* #202c3f - Hairline Border */
-    --border-subtle: 222 22% 14%;    /* #162030 - Low Contrast Border */
+    /* ScanVault Modern Light Document Workspace Color System */
+    --background: 228 33% 98%;           /* #F7F8FC - Soft Clean Gray Canvas */
+    --surface: 0 0% 100%;                /* #FFFFFF - Crisp White Card Surface */
+    --surface-secondary: 223 27% 96%;    /* #F1F3F8 - Subtle Floating Surface/Input */
+    --surface-tertiary: 220 20% 92%;     /* #E5E9F2 - Hover Active State */
     
-    --primary: 238 84% 67%;          /* #6366f1 - Electric Indigo Accent */
-    --primary-foreground: 0 0% 100%; /* #ffffff */
-    --primary-subtle: 238 84% 67% / 0.14;
+    --foreground: 232 30% 13%;           /* #171A2B - Deep Navy/Charcoal Heading & Body */
+    --muted-foreground: 220 13% 46%;     /* #667085 - Readable Secondary Metadata */
+    --text-subtle: 218 15% 65%;          /* #98A2B3 - Placeholder & Muted Icons */
     
-    --accent: 190 95% 45%;           /* #06b6d4 - Radiant Cyan */
-    --accent-foreground: 0 0% 100%;
+    --border: 220 13% 91%;               /* #E5E7EB - Thin Crisp Border */
+    --border-subtle: 220 13% 95%;        /* #F1F3F5 - Low Contrast Divider */
     
-    --success: 158 64% 52%;          /* #10b981 - Emerald */
-    --success-foreground: 0 0% 100%;
+    --primary: 243 75% 59%;              /* #4F46E5 - Indigo Primary */
+    --primary-hover: 244 58% 51%;        /* #4338CA */
+    --primary-dark: 243 54% 42%;         /* #3730A3 */
+    --primary-soft: 231 100% 97%;        /* #EEF2FF */
+    --primary-foreground: 0 0% 100%;     /* #FFFFFF */
     
-    --warning: 38 92% 50%;           /* #f59e0b - Amber */
-    --warning-foreground: 0 0% 100%;
+    --accent: 173 80% 40%;               /* #14B8A6 - Modern Teal */
+    --accent-soft: 168 84% 90%;          /* #CCFBF1 */
+    --accent-foreground: 173 80% 15%;
     
-    --destructive: 350 89% 60%;      /* #f43f5e - Rose */
-    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;              /* #16A34A - Emerald Green */
+    --success-soft: 138 76% 93%;         /* #DCFCE7 */
+    --success-foreground: 142 76% 15%;
     
-    --overlay: 222 47% 4% / 0.82;
+    --warning: 38 92% 44%;               /* #D97706 - Amber */
+    --warning-soft: 48 96% 89%;          /* #FEF3C7 */
+    --warning-foreground: 38 92% 15%;
+    
+    --destructive: 0 72% 51%;            /* #DC2626 - Rose Red */
+    --destructive-soft: 0 86% 94%;       /* #FEE2E2 */
+    --destructive-foreground: 0 72% 15%;
+    
+    --overlay: 222 47% 11% / 0.35;
 
     /* Safe Area Defaults */
     --safe-top: env(safe-area-inset-top, 0px);
@@ -63,84 +71,110 @@
     touch-action: manipulation;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image: 
-      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(238 84% 67% / 0.08), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(190 95% 45% / 0.04), transparent);
-    background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* Premium Glass Cards */
-  .glass-card {
-    background-color: hsl(var(--surface) / 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  /* Clean White Cards */
+  .workspace-card {
+    background-color: hsl(var(--surface));
     border: 1px solid hsl(var(--border));
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.05);
   }
 
-  .glass-card-interactive {
-    background-color: hsl(var(--surface) / 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  .workspace-card-interactive {
+    background-color: hsl(var(--surface));
     border: 1px solid hsl(var(--border));
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.05);
+    transition: all 0.15s ease-in-out;
   }
 
-  .glass-card-interactive:hover {
-    background-color: hsl(var(--surface-secondary) / 0.85);
-    border-color: hsl(var(--primary) / 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px -6px hsl(var(--primary) / 0.15);
+  .workspace-card-interactive:hover {
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 0 4px 12px 0 rgba(16, 24, 40, 0.08);
   }
 
-  .glass-card-interactive:active {
-    transform: scale(0.985);
+  .workspace-card-interactive:active {
+    transform: scale(0.99);
   }
 
-  /* Core Action Buttons */
+  /* Form Controls */
+  .form-input {
+    width: 100%;
+    height: 48px;
+    background-color: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    transition: all 0.15s ease;
+  }
+
+  .form-input::placeholder {
+    color: hsl(var(--text-subtle));
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary-soft));
+  }
+
+  /* Primary Action Button */
   .btn-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(245, 80%, 60%) 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    background-color: hsl(var(--primary));
     color: #ffffff;
     font-weight: 600;
-    border-radius: 0.875rem;
-    box-shadow: 0 4px 16px hsl(var(--primary) / 0.35);
-    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    border-radius: 0.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
   }
 
   .btn-primary:hover {
-    box-shadow: 0 6px 22px hsl(var(--primary) / 0.5);
-    filter: brightness(1.08);
+    background-color: hsl(var(--primary-hover));
+    box-shadow: 0 4px 8px 0 hsl(var(--primary) / 0.2);
   }
 
   .btn-primary:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 
+  /* Secondary Button */
   .btn-secondary {
-    background-color: hsl(var(--surface-secondary));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    background-color: hsl(var(--surface));
     color: hsl(var(--foreground));
+    font-weight: 600;
+    font-size: 0.875rem;
     border: 1px solid hsl(var(--border));
-    border-radius: 0.875rem;
-    transition: all 0.2s ease;
+    border-radius: 0.75rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.03);
   }
 
   .btn-secondary:hover {
-    background-color: hsl(var(--surface-tertiary));
-    border-color: hsl(var(--primary) / 0.3);
+    background-color: hsl(var(--surface-secondary));
+    border-color: hsl(var(--border));
   }
 
   .btn-secondary:active {
-    transform: scale(0.97);
-  }
-
-  /* Glowing Badges */
-  .badge-glow {
-    background-color: hsl(var(--primary-subtle));
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.3);
-    box-shadow: 0 0 12px hsl(var(--primary) / 0.2);
+    transform: scale(0.98);
   }
 }
 

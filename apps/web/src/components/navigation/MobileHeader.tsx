@@ -1,56 +1,47 @@
-import { ShieldCheck, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 export function MobileHeader() {
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[hsl(var(--surface))]/90 backdrop-blur-md border-b border-border pt-safe select-none">
+    <header className="sticky top-0 z-40 w-full bg-surface/95 backdrop-blur-md border-b border-border pt-safe select-none">
       <div className="w-full max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        {/* Logo & Workspace Title */}
-        <Link to="/" className="flex items-center gap-2.5 active:opacity-80 transition-opacity">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 border border-indigo-400/30 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-base tracking-tight text-foreground">
-                ScanVault
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                PWA
-              </span>
-            </div>
-          </div>
+        {/* Logo */}
+        <Link to="/" className="active:opacity-80 transition-opacity">
+          <BrandLogo size="sm" showText={true} />
         </Link>
 
-        {/* Right Action Items */}
+        {/* Right Status / Profile */}
         <div className="flex items-center gap-2">
-          {/* Offline Air-Gapped Status */}
-          <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          {/* Offline Ready Status */}
+          <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-secondary text-muted border border-border">
+            <span className="w-1.5 h-1.5 rounded-full bg-success" />
             <span>Offline Ready</span>
           </div>
 
-          {/* User Profile / Settings Shortcut */}
+          {/* User Profile / Settings Link */}
           <Link
             to="/settings"
-            className="touch-target p-1.5 rounded-xl bg-surface-secondary border border-border text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+            className="touch-target p-1 rounded-full hover:bg-surface-secondary transition-colors"
             aria-label="Account Settings"
           >
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}
                 alt={user.name || user.email}
-                className="w-6 h-6 rounded-lg object-cover"
+                className="w-7 h-7 rounded-full object-cover border border-border"
               />
             ) : user ? (
-              <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 font-bold text-xs flex items-center justify-center border border-indigo-500/30">
+              <div className="w-7 h-7 rounded-full bg-primary-soft text-primary font-semibold text-xs flex items-center justify-center border border-primary/20">
                 {(user.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
               </div>
             ) : (
-              <User className="w-4 h-4 text-muted-foreground" />
+              <div className="w-7 h-7 rounded-full bg-surface-secondary border border-border text-muted flex items-center justify-center">
+                <User className="w-3.5 h-3.5" />
+              </div>
             )}
           </Link>
         </div>

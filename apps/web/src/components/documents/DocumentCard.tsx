@@ -27,21 +27,21 @@ export function DocumentCard({
     return (
       <div
         onClick={onClick}
-        className="group relative bg-surface border border-border hover:border-primary/50 rounded-2xl p-3.5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] select-none"
+        className="group relative bg-surface border border-border hover:border-primary/40 rounded-xl p-3 flex flex-col justify-between shadow-subtle hover:shadow-card transition-all cursor-pointer select-none"
       >
         {/* Top Header in Grid: Favorite & More */}
-        <div className="flex items-center justify-between w-full mb-3">
+        <div className="flex items-center justify-between w-full mb-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onFavoriteToggle?.(e);
             }}
-            className={`touch-target -m-2 p-2 rounded-lg transition-colors ${
-              document.favorite ? 'text-amber-400' : 'text-muted-foreground/50 hover:text-muted-foreground'
+            className={`p-1.5 rounded-lg transition-colors ${
+              document.favorite ? 'text-amber-500' : 'text-subtle hover:text-muted'
             }`}
             aria-label={document.favorite ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Star className={`w-4 h-4 ${document.favorite ? 'fill-amber-400' : ''}`} />
+            <Star className={`w-4 h-4 ${document.favorite ? 'fill-amber-500' : ''}`} />
           </button>
 
           <button
@@ -49,7 +49,7 @@ export function DocumentCard({
               e.stopPropagation();
               onMoreClick?.(e);
             }}
-            className="touch-target -m-2 p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+            className="p-1.5 text-subtle hover:text-foreground rounded-lg transition-colors"
             aria-label="Document options"
           >
             <MoreVertical className="w-4 h-4" />
@@ -66,11 +66,11 @@ export function DocumentCard({
         </div>
 
         {/* Bottom Details */}
-        <div className="w-full mt-3 min-w-0">
+        <div className="w-full mt-2 min-w-0">
           <h4 className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {document.title}
           </h4>
-          <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between mt-1 text-[11px] text-muted">
             <span>{formatBytes(document.sizeBytes)}</span>
             <span>{formattedDate}</span>
           </div>
@@ -83,7 +83,7 @@ export function DocumentCard({
   return (
     <div
       onClick={onClick}
-      className="group relative w-full bg-surface border border-border hover:border-primary/40 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow transition-all cursor-pointer active:scale-[0.99] select-none min-w-0"
+      className="group relative w-full bg-surface border border-border hover:border-primary/40 rounded-xl p-3 flex items-center gap-3.5 shadow-subtle hover:shadow-card transition-all cursor-pointer select-none min-w-0"
     >
       <DocumentThumbnail
         pageCount={document.pageCount}
@@ -95,7 +95,7 @@ export function DocumentCard({
         <h4 className="text-xs xs:text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
           {document.title}
         </h4>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-muted">
           <span>{document.pageCount} {document.pageCount === 1 ? 'page' : 'pages'}</span>
           <span>•</span>
           <span>{formatBytes(document.sizeBytes)}</span>
@@ -111,11 +111,11 @@ export function DocumentCard({
             onFavoriteToggle?.(e);
           }}
           className={`touch-target p-2 rounded-lg transition-colors ${
-            document.favorite ? 'text-amber-400' : 'text-muted-foreground/40 hover:text-muted-foreground'
+            document.favorite ? 'text-amber-500' : 'text-subtle hover:text-muted'
           }`}
           aria-label={document.favorite ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Star className={`w-4 h-4 ${document.favorite ? 'fill-amber-400' : ''}`} />
+          <Star className={`w-4 h-4 ${document.favorite ? 'fill-amber-500' : ''}`} />
         </button>
 
         <button
@@ -123,7 +123,7 @@ export function DocumentCard({
             e.stopPropagation();
             onMoreClick?.(e);
           }}
-          className="touch-target p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+          className="touch-target p-2 text-subtle hover:text-foreground rounded-lg transition-colors"
           aria-label="Document options"
         >
           <MoreVertical className="w-4 h-4" />

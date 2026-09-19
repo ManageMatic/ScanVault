@@ -9,7 +9,6 @@ import {
   Image,
   FileImage,
   Stamp,
-  Sparkles,
   Search,
 } from 'lucide-react';
 import { PDF_TOOLS } from '@/lib/mockData';
@@ -61,17 +60,13 @@ export function ToolsPage() {
   ];
 
   return (
-    <div className="w-full flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5 animate-fade-in">
       {/* 1. Header */}
       <div>
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 mb-1.5">
-          <Sparkles className="w-3 h-3" />
-          PDF Studio
-        </div>
-        <h2 className="text-xl xs:text-2xl font-extrabold tracking-tight text-foreground">
-          PDF & Document Tools
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
+          PDF Studio Tools
+        </h1>
+        <p className="text-xs text-muted mt-0.5">
           Client-side PDF utilities running 100% offline in browser
         </p>
       </div>
@@ -79,13 +74,13 @@ export function ToolsPage() {
       {/* 2. Search & Category Filters */}
       <div className="flex flex-col gap-3">
         <div className="relative w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tools (Merge, Compress, Split)..."
-            className="touch-target w-full bg-surface border border-border rounded-xl pl-10 pr-4 text-xs xs:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all shadow-sm"
+            className="form-input pl-10 text-xs xs:text-sm"
           />
         </div>
 
@@ -97,8 +92,8 @@ export function ToolsPage() {
               onClick={() => setSelectedCategory(cat.id)}
               className={`touch-target px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 selectedCategory === cat.id
-                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                  : 'bg-surface text-muted-foreground hover:text-foreground border border-border'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-surface text-muted hover:text-foreground border border-border'
               }`}
             >
               {cat.label}
@@ -119,14 +114,14 @@ export function ToolsPage() {
                 type: 'info',
               })
             }
-            className="group bg-surface hover:bg-surface-secondary border border-border hover:border-primary/50 rounded-2xl p-4 flex flex-col items-start text-left transition-all active:scale-[0.98] shadow-sm hover:shadow"
+            className="group bg-surface hover:bg-surface-secondary border border-border hover:border-primary/40 rounded-xl p-4 flex flex-col items-start text-left transition-all active:scale-[0.98] shadow-subtle hover:shadow-card"
           >
             <div className="flex items-center justify-between w-full mb-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
                 {getToolIcon(tool.icon)}
               </div>
               {tool.badge && (
-                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+                <span className="text-[10px] font-semibold text-primary bg-primary-soft px-2 py-0.5 rounded-md">
                   {tool.badge}
                 </span>
               )}
@@ -135,7 +130,7 @@ export function ToolsPage() {
             <h3 className="text-xs xs:text-sm font-bold text-foreground group-hover:text-primary transition-colors">
               {tool.title}
             </h3>
-            <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+            <p className="text-[11px] text-muted mt-1 line-clamp-2 leading-relaxed">
               {tool.description}
             </p>
           </button>

@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="pointer-events-auto w-full bg-surface border border-border shadow-xl rounded-xl p-3.5 flex items-start gap-3 animate-slide-up transition-all"
+            className="pointer-events-auto w-full bg-surface border border-border shadow-elevated rounded-xl p-3.5 flex items-start gap-3 animate-slide-up transition-all"
           >
             <div className="shrink-0 mt-0.5">
               {t.type === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
@@ -63,14 +63,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-foreground truncate">{t.title}</p>
               {t.description && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                <p className="text-[11px] text-muted mt-0.5 line-clamp-2">
                   {t.description}
                 </p>
               )}
             </div>
             <button
               onClick={() => dismiss(t.id)}
-              className="shrink-0 p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+              className="shrink-0 p-1 text-subtle hover:text-foreground rounded-lg transition-colors"
               aria-label="Dismiss notification"
             >
               <X className="w-3.5 h-3.5" />

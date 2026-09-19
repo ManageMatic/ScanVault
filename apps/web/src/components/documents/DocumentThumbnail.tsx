@@ -9,36 +9,37 @@ interface DocumentThumbnailProps {
 
 export function DocumentThumbnail({
   pageCount = 1,
-  color = '#008378',
   className = '',
   size = 'md',
 }: DocumentThumbnailProps) {
   const sizeClasses = {
     sm: 'w-10 h-13',
-    md: 'w-14 h-18',
-    lg: 'w-24 h-32',
+    md: 'w-12 h-16',
+    lg: 'w-20 h-28',
   };
 
   return (
     <div
-      className={`relative shrink-0 rounded-lg overflow-hidden border border-border/80 bg-surface-secondary shadow-sm flex flex-col items-center justify-between p-1.5 select-none ${sizeClasses[size]} ${className}`}
-      style={{
-        borderTop: `3px solid ${color}`,
-      }}
+      className={`relative shrink-0 rounded-md border border-border bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col justify-between p-1.5 select-none ${sizeClasses[size]} ${className}`}
     >
-      {/* Decorative Document Page Lines */}
-      <div className="w-full flex flex-col gap-1 pt-1 opacity-40">
-        <div className="w-3/4 h-0.5 rounded-full bg-foreground" />
-        <div className="w-full h-0.5 rounded-full bg-foreground" />
-        <div className="w-1/2 h-0.5 rounded-full bg-foreground" />
+      {/* Top simulated document fold / corner accent */}
+      <div className="w-full flex items-center justify-between">
+        <span className="text-[8px] font-bold text-primary uppercase tracking-tight">PDF</span>
+        <div className="w-2 h-2 rounded-bl bg-surface-secondary border-b border-l border-border" />
       </div>
 
-      <FileText className="w-4 h-4 text-muted-foreground/60 my-auto" />
+      {/* Simulated text lines */}
+      <div className="w-full flex flex-col gap-1 my-auto opacity-30">
+        <div className="w-full h-0.5 rounded bg-muted" />
+        <div className="w-4/5 h-0.5 rounded bg-muted" />
+        <div className="w-3/5 h-0.5 rounded bg-muted" />
+      </div>
 
-      {/* Page count pill */}
-      <span className="text-[9px] font-bold text-muted-foreground bg-surface/90 px-1 py-0.2 rounded border border-border/40">
-        {pageCount}p
-      </span>
+      {/* Bottom page count tag */}
+      <div className="flex items-center justify-between text-[9px] text-muted font-medium pt-0.5">
+        <FileText className="w-2.5 h-2.5 opacity-60" />
+        <span>{pageCount}p</span>
+      </div>
     </div>
   );
 }

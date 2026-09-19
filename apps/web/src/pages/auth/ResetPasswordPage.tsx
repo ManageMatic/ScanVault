@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { KeyRound, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 export const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
@@ -23,12 +24,12 @@ export const ResetPasswordPage = () => {
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -60,123 +61,114 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 selection:bg-[var(--color-primary-light)]">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link
-          to="/login"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] mb-6 transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-          Back to sign in
-        </Link>
-
-        {/* Logo and Header */}
-        <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-primary)] shadow-inner">
-            <KeyRound className="w-6 h-6" />
+    <div className="min-h-screen w-full flex items-center justify-center p-4 xs:p-6 bg-background text-foreground">
+      <div className="w-full max-w-md bg-surface border border-border sm:rounded-2xl p-6 xs:p-8 sm:shadow-card flex flex-col gap-6 animate-fade-in">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-4">
+            <BrandLogo size="lg" showText={false} />
           </div>
+          <h1 className="text-xl xs:text-2xl font-bold tracking-tight text-foreground">
+            Create a new password
+          </h1>
+          <p className="text-xs xs:text-sm text-muted mt-1 leading-relaxed max-w-xs">
+            Please choose a password with at least 8 characters.
+          </p>
         </div>
-        <h1 className="mt-4 text-center text-2xl font-bold tracking-tight text-[var(--color-text)]">
-          Set new password
-        </h1>
-        <p className="mt-1 text-center text-xs text-[var(--color-text-muted)] max-w-xs mx-auto">
-          Please choose a strong password with at least 8 characters.
-        </p>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="glass-card p-6 sm:p-8 rounded-3xl border border-[var(--color-border)] shadow-xl relative overflow-hidden">
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-xs flex items-center gap-2.5 animate-fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+        {error && (
+          <div className="w-full bg-destructive-soft border border-destructive/20 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-destructive">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="flex-1 leading-relaxed font-medium">{error}</p>
+          </div>
+        )}
+
+        {!token && (
+          <div className="w-full bg-warning-soft border border-warning/20 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-warning">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="flex-1 leading-relaxed">No reset token provided. Please use the link sent to your email.</p>
+          </div>
+        )}
+
+        {success ? (
+          <div className="text-center py-3 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-          )}
-
-          {!token && (
-            <div className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>No reset token provided. Please use the link sent to your email.</span>
-            </div>
-          )}
-
-          {success ? (
-            <div className="text-center py-4 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto animate-bounce">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-semibold text-[var(--color-text)]">Password Reset Successful</h3>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Your password has been securely updated. Redirecting you to sign in...
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Password Reset Complete</h3>
+              <p className="text-xs text-muted mt-1">
+                Your password has been updated. Redirecting you to sign in...
               </p>
-              <div className="pt-2">
-                <Link to="/login" className="btn btn-primary w-full text-xs font-semibold py-2.5">
-                  Sign In Now
-                </Link>
+            </div>
+            <div className="pt-2">
+              <Link to="/login" className="btn-primary w-full">
+                Sign in now
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="form-input pl-10 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-foreground p-1 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
-                  New Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    autoComplete="new-password"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1.5">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat new password"
-                    autoComplete="new-password"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)] text-xs text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-colors"
-                  />
-                </div>
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="form-input pl-10"
+                />
               </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading || !token}
-                className="btn btn-primary w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[var(--color-primary)]/20 mt-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Reset Password</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-        </div>
+            <button
+              type="submit"
+              disabled={loading || !token}
+              className="btn-primary w-full mt-1 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Updating Password...</span>
+                </div>
+              ) : (
+                <span>Reset password</span>
+              )}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

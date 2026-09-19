@@ -36,7 +36,7 @@ export function Modal({ isOpen, onClose, title, description, children }: ModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px] animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -46,20 +46,20 @@ export function Modal({ isOpen, onClose, title, description, children }: ModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative z-10 w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl animate-scale-in p-5 xs:p-6 overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative z-10 w-full max-w-md bg-surface border border-border rounded-xl shadow-elevated animate-scale-in p-5 xs:p-6 overflow-hidden max-h-[90vh] flex flex-col"
       >
-        <div className="flex items-start justify-between pb-3 border-b border-border/50 mb-4">
+        <div className="flex items-start justify-between pb-3 border-b border-border mb-4">
           <div>
             <h3 id="modal-title" className="text-base font-bold text-foreground">
               {title}
             </h3>
             {description && (
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+              <p className="text-xs text-muted mt-0.5">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg transition-colors -mr-1"
+            className="p-1.5 text-subtle hover:text-foreground rounded-lg transition-colors -mr-1"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />

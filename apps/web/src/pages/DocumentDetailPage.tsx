@@ -18,7 +18,7 @@ export function DocumentDetailPage() {
         icon={FileText}
         title="Document Not Found"
         description="The document you are looking for might have been deleted or moved."
-        actionLabel="Back to Vault"
+        actionLabel="Back to Documents"
         onAction={() => navigate('/documents')}
       />
     );
@@ -31,7 +31,7 @@ export function DocumentDetailPage() {
   });
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6 animate-fade-in">
       {/* 1. Header Toolbar */}
       <div className="flex items-center justify-between">
         <button
@@ -39,7 +39,7 @@ export function DocumentDetailPage() {
           className="touch-target px-3 -ml-2 text-xs font-semibold text-foreground hover:bg-surface-secondary rounded-xl transition-colors flex items-center gap-1.5"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Vault</span>
+          <span>Documents</span>
         </button>
 
         <div className="flex items-center gap-1">
@@ -51,11 +51,11 @@ export function DocumentDetailPage() {
               })
             }
             className={`touch-target p-2 rounded-xl transition-colors ${
-              doc.favorite ? 'text-amber-400' : 'text-muted-foreground hover:text-foreground'
+              doc.favorite ? 'text-amber-500' : 'text-subtle hover:text-foreground'
             }`}
             aria-label="Toggle favorite"
           >
-            <Star className={`w-4 h-4 ${doc.favorite ? 'fill-amber-400' : ''}`} />
+            <Star className={`w-4 h-4 ${doc.favorite ? 'fill-amber-500' : ''}`} />
           </button>
 
           <button
@@ -66,7 +66,7 @@ export function DocumentDetailPage() {
                 type: 'info',
               })
             }
-            className="touch-target p-2 text-muted-foreground hover:text-foreground rounded-xl transition-colors"
+            className="touch-target p-2 text-subtle hover:text-foreground rounded-xl transition-colors"
             aria-label="Share document"
           >
             <Share2 className="w-4 h-4" />
@@ -77,7 +77,7 @@ export function DocumentDetailPage() {
               toast({ title: 'Document deleted', type: 'info' });
               navigate('/documents');
             }}
-            className="touch-target p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+            className="touch-target p-2 text-destructive hover:bg-destructive-soft rounded-xl transition-colors"
             aria-label="Delete document"
           >
             <Trash2 className="w-4 h-4" />
@@ -86,7 +86,7 @@ export function DocumentDetailPage() {
       </div>
 
       {/* 2. Document Title Card */}
-      <div className="w-full bg-surface border border-border rounded-2xl p-4 xs:p-5 shadow-sm flex flex-col gap-3">
+      <div className="w-full bg-surface border border-border rounded-xl p-4 xs:p-5 shadow-subtle flex flex-col gap-3">
         <div className="flex items-start gap-3.5">
           <DocumentThumbnail
             pageCount={doc.pageCount}
@@ -96,9 +96,9 @@ export function DocumentDetailPage() {
           />
 
           <div className="flex-1 min-w-0">
-            <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 mb-1.5">
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-primary-soft text-primary mb-1.5">
               PDF Document
-            </div>
+            </span>
             <h2 className="text-base xs:text-lg font-bold text-foreground break-words">
               {doc.title}
             </h2>
@@ -109,7 +109,7 @@ export function DocumentDetailPage() {
                 {doc.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] font-medium bg-surface-secondary text-muted-foreground px-2 py-0.5 rounded-md border border-border/60"
+                    className="text-[10px] font-medium bg-surface-secondary text-muted px-2 py-0.5 rounded-md border border-border"
                   >
                     #{tag}
                   </span>
@@ -120,29 +120,29 @@ export function DocumentDetailPage() {
         </div>
 
         {/* Metadata Grid */}
-        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-center">
-          <div className="bg-surface-secondary rounded-xl p-2">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
+        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border text-center">
+          <div className="bg-surface-secondary rounded-lg p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted mb-0.5">
               <Layers className="w-3 h-3 text-primary" />
               <span>Pages</span>
             </div>
-            <p className="text-xs font-bold text-foreground">{doc.pageCount}</p>
+            <p className="text-xs font-semibold text-foreground">{doc.pageCount}</p>
           </div>
 
-          <div className="bg-surface-secondary rounded-xl p-2">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
-              <HardDrive className="w-3 h-3 text-blue-400" />
+          <div className="bg-surface-secondary rounded-lg p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted mb-0.5">
+              <HardDrive className="w-3 h-3 text-blue-600" />
               <span>Size</span>
             </div>
-            <p className="text-xs font-bold text-foreground">{formatBytes(doc.sizeBytes)}</p>
+            <p className="text-xs font-semibold text-foreground">{formatBytes(doc.sizeBytes)}</p>
           </div>
 
-          <div className="bg-surface-secondary rounded-xl p-2">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
-              <Calendar className="w-3 h-3 text-emerald-400" />
+          <div className="bg-surface-secondary rounded-lg p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted mb-0.5">
+              <Calendar className="w-3 h-3 text-emerald-600" />
               <span>Date</span>
             </div>
-            <p className="text-xs font-bold text-foreground truncate">{formattedDate}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{formattedDate}</p>
           </div>
         </div>
       </div>
@@ -157,7 +157,7 @@ export function DocumentDetailPage() {
               type: 'info',
             })
           }
-          className="touch-target-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-95 text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2"
         >
           <Edit3 className="w-4 h-4" />
           <span>Annotate & Sign</span>
@@ -171,14 +171,14 @@ export function DocumentDetailPage() {
               type: 'success',
             })
           }
-          className="touch-target-lg bg-surface hover:bg-surface-secondary text-foreground active:scale-95 text-xs font-bold rounded-xl border border-border transition-all flex items-center justify-center gap-2 shadow-sm"
+          className="btn-secondary flex items-center justify-center gap-2"
         >
           <Download className="w-4 h-4 text-primary" />
           <span>Download PDF</span>
         </button>
       </div>
 
-      {/* 4. Document Pages Preview Scaffolding */}
+      {/* 4. Document Pages Preview Grid */}
       <div className="flex flex-col gap-3 pt-2">
         <h3 className="text-sm font-bold text-foreground">
           Document Pages ({doc.pageCount})
@@ -188,16 +188,16 @@ export function DocumentDetailPage() {
           {Array.from({ length: Math.min(doc.pageCount, 6) }).map((_, index) => (
             <div
               key={index}
-              className="bg-surface border border-border rounded-xl p-3 flex flex-col items-center justify-between aspect-[3/4] shadow-sm hover:border-primary/50 transition-colors"
+              className="bg-surface border border-border rounded-xl p-3 flex flex-col items-center justify-between aspect-[3/4] shadow-subtle hover:border-primary/40 transition-colors"
             >
               <div className="w-full flex flex-col gap-1.5 opacity-30 pt-2">
-                <div className="w-full h-1 rounded bg-foreground" />
-                <div className="w-5/6 h-1 rounded bg-foreground" />
-                <div className="w-4/6 h-1 rounded bg-foreground" />
-                <div className="w-full h-1 rounded bg-foreground" />
+                <div className="w-full h-1 rounded bg-muted" />
+                <div className="w-5/6 h-1 rounded bg-muted" />
+                <div className="w-4/6 h-1 rounded bg-muted" />
+                <div className="w-full h-1 rounded bg-muted" />
               </div>
 
-              <span className="text-[10px] font-bold text-muted-foreground bg-surface-secondary px-2 py-0.5 rounded-full border border-border/40">
+              <span className="text-[10px] font-semibold text-muted bg-surface-secondary px-2 py-0.5 rounded-md border border-border">
                 Page {index + 1}
               </span>
             </div>
