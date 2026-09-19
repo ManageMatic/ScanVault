@@ -18,6 +18,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { authRateLimiter } from '../middleware/rateLimiter.js';
 import { ApiResponse, ApiSuccessResponse, ApiErrorResponse } from '@scanvault/shared';
+import { env } from '../config/env.js';
 
 export const authRouter = Router();
 
@@ -407,11 +408,12 @@ authRouter.get('/google', (_req: Request, res: Response) => {
   }
 
   const state = generateToken();
+  console.log('[ScanVault][OAuth] Initiation: generating auth URL...');
 
   // Set short-lived state cookie (10 minutes)
   res.cookie('scanvault_oauth_state', state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 10 * 60 * 1000,
     path: '/',
@@ -427,10 +429,13 @@ authRouter.get('/google', (_req: Request, res: Response) => {
  */
 authRouter.get('/google/callback', async (req: Request, res: Response) => {
   const { code, state, error: googleError } = req.query;
+  const clientUrl = env.CLIENT_URL || 'http://localhost:5173';
+
+  console.log('[ScanVault][OAuth] Callback reached');
 
   if (googleError) {
-    console.warn('[ScanVault][GoogleOAuth] Google returned error:', googleError);
-    res.redirect('/login?error=google_oauth_denied');
+    console.warn('[ScanVault][OAuth] Google returned authorization error:', googleError);
+    res.redirect(`${clientUrl}/login?error=google_oauth_denied`);
     return;
   }
 
@@ -438,12 +443,17 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
   res.clearCookie('scanvault_oauth_state', { path: '/' });
 
   if (!state || !storedState || state !== storedState || typeof code !== 'string') {
-    res.redirect('/login?error=oauth_state_mismatch');
+    console.warn('[ScanVault][OAuth] State validation failed or code missing');
+    res.redirect(`${clientUrl}/login?error=oauth_state_mismatch`);
     return;
   }
 
+  console.log('[ScanVault][OAuth] State validated successfully');
+
   try {
+    console.log('[ScanVault][OAuth] Exchanging code for Google identity...');
     const googleProfile = await verifyGoogleCode(code);
+    console.log('[ScanVault][OAuth] Google identity received for user');
 
     let user = await prisma.user.findFirst({
       where: {
@@ -472,6 +482,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
             providerAccountId: googleProfile.providerAccountId,
           },
         });
+        console.log('[ScanVault][OAuth] Linked Google account to existing user');
       } else {
         // Create new User + Google Account in a transaction
         user = await prisma.$transaction(async (tx) => {
@@ -494,17 +505,22 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
 
           return newUser;
         });
+        console.log('[ScanVault][OAuth] Created new user with Google identity');
       }
+    } else {
+      console.log('[ScanVault][OAuth] ScanVault account resolved from Google identity');
     }
 
     // Create session & set HttpOnly cookie
     const { rawToken, expiresAt } = await createSession(user.id);
     setSessionCookie(res, rawToken, expiresAt);
+    console.log('[ScanVault][OAuth] ScanVault session created & HttpOnly cookie set');
 
-    // Redirect to web application home
-    res.redirect('/');
+    // Redirect to frontend client home
+    console.log(`[ScanVault][OAuth] Redirecting to frontend: ${clientUrl}/`);
+    res.redirect(`${clientUrl}/`);
   } catch (error) {
-    console.error('[ScanVault][GoogleOAuth] Callback exchange error:', error);
-    res.redirect('/login?error=google_oauth_failed');
+    console.error('[ScanVault][OAuth] Callback exchange error:', error);
+    res.redirect(`${clientUrl}/login?error=google_oauth_failed`);
   }
 });

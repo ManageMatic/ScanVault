@@ -11,6 +11,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),
+  CLIENT_URL: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 characters long'),
   GOOGLE_CLIENT_ID: z.string().optional(),

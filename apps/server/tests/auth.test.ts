@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { hashPassword, verifyPassword, generateToken, hashToken } from '../src/lib/auth.js';
+import { env } from '../src/config/env.js';
 
 describe('Authentication Unit & Cryptography Helpers', () => {
   it('hashes passwords and verifies them correctly', async () => {
@@ -160,5 +161,30 @@ describe('Auth API Endpoints', () => {
     expect(cookies).toBeDefined();
     const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
     expect(cookieHeader).toContain('scanvault_session=;');
+  });
+
+  it('GET /api/v1/auth/google generates state and redirects to Google OAuth authorization URL', async () => {
+    const res = await request(app).get('/api/v1/auth/google');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain('accounts.google.com/o/oauth2/v2/auth');
+    expect(res.headers.location).toContain('client_id=');
+    expect(res.headers.location).toContain('redirect_uri=');
+
+    const cookies = res.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
+    expect(cookieHeader).toContain('scanvault_oauth_state=');
+  });
+
+  it('GET /api/v1/auth/google/callback redirects to client on state mismatch', async () => {
+    const res = await request(app).get('/api/v1/auth/google/callback');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`${env.CLIENT_URL}/login?error=oauth_state_mismatch`);
+  });
+
+  it('GET /api/v1/auth/google/callback redirects to client on Google denial error', async () => {
+    const res = await request(app).get('/api/v1/auth/google/callback?error=access_denied');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`${env.CLIENT_URL}/login?error=google_oauth_denied`);
   });
 });
