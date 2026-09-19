@@ -1,0 +1,18 @@
+{
+  "name": "ScanVault Document Workspace",
+  "short_name": "ScanVault",
+  "description": "Mobile-First Document Workspace & Offline PDF Studio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0f14",
+  "theme_color": "#0c0f14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
