@@ -1,0 +1,209 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Share2, Star, Trash2, Edit3, Download, FileText, Calendar, HardDrive, Layers } from 'lucide-react';
+import { INITIAL_MOCK_DOCUMENTS, formatBytes } from '@/lib/mockData';
+import { DocumentThumbnail } from '@/components/documents/DocumentThumbnail';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useToast } from '@/lib/toast';
+
+export function DocumentDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const doc = INITIAL_MOCK_DOCUMENTS.find((d) => d.id === id);
+
+  if (!doc) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="Document Not Found"
+        description="The document you are looking for might have been deleted or moved."
+        actionLabel="Back to Vault"
+        onAction={() => navigate('/documents')}
+      />
+    );
+  }
+
+  const formattedDate = new Date(doc.updatedAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return (
+    <div className="w-full flex flex-col gap-6">
+      {/* 1. Header Toolbar */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/documents')}
+          className="touch-target px-3 -ml-2 text-xs font-semibold text-foreground hover:bg-surface-secondary rounded-xl transition-colors flex items-center gap-1.5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Vault</span>
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() =>
+              toast({
+                title: doc.favorite ? 'Removed from favorites' : 'Saved to favorites',
+                type: 'success',
+              })
+            }
+            className={`touch-target p-2 rounded-xl transition-colors ${
+              doc.favorite ? 'text-amber-400' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            aria-label="Toggle favorite"
+          >
+            <Star className={`w-4 h-4 ${doc.favorite ? 'fill-amber-400' : ''}`} />
+          </button>
+
+          <button
+            onClick={() =>
+              toast({
+                title: 'Exporting PDF',
+                description: 'Module 07 PDF Engine will handle actual export',
+                type: 'info',
+              })
+            }
+            className="touch-target p-2 text-muted-foreground hover:text-foreground rounded-xl transition-colors"
+            aria-label="Share document"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => {
+              toast({ title: 'Document deleted', type: 'info' });
+              navigate('/documents');
+            }}
+            className="touch-target p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+            aria-label="Delete document"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Document Title Card */}
+      <div className="w-full bg-surface border border-border rounded-2xl p-4 xs:p-5 shadow-sm flex flex-col gap-3">
+        <div className="flex items-start gap-3.5">
+          <DocumentThumbnail
+            pageCount={doc.pageCount}
+            color={doc.thumbnailColor}
+            size="lg"
+            className="hidden xs:flex"
+          />
+
+          <div className="flex-1 min-w-0">
+            <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 mb-1.5">
+              PDF Document
+            </div>
+            <h2 className="text-base xs:text-lg font-bold text-foreground break-words">
+              {doc.title}
+            </h2>
+
+            {/* Tags */}
+            {doc.tags && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {doc.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[10px] font-medium bg-surface-secondary text-muted-foreground px-2 py-0.5 rounded-md border border-border/60"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Metadata Grid */}
+        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-center">
+          <div className="bg-surface-secondary rounded-xl p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
+              <Layers className="w-3 h-3 text-primary" />
+              <span>Pages</span>
+            </div>
+            <p className="text-xs font-bold text-foreground">{doc.pageCount}</p>
+          </div>
+
+          <div className="bg-surface-secondary rounded-xl p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
+              <HardDrive className="w-3 h-3 text-blue-400" />
+              <span>Size</span>
+            </div>
+            <p className="text-xs font-bold text-foreground">{formatBytes(doc.sizeBytes)}</p>
+          </div>
+
+          <div className="bg-surface-secondary rounded-xl p-2">
+            <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mb-0.5">
+              <Calendar className="w-3 h-3 text-emerald-400" />
+              <span>Date</span>
+            </div>
+            <p className="text-xs font-bold text-foreground truncate">{formattedDate}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Quick Action Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() =>
+            toast({
+              title: 'PDF Viewer & Annotations',
+              description: 'Module 11 will provide full markup & annotations',
+              type: 'info',
+            })
+          }
+          className="touch-target-lg bg-primary text-primary-foreground hover:opacity-90 active:scale-95 text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+        >
+          <Edit3 className="w-4 h-4" />
+          <span>Annotate & Sign</span>
+        </button>
+
+        <button
+          onClick={() =>
+            toast({
+              title: 'Export PDF',
+              description: 'Preparing local PDF download...',
+              type: 'success',
+            })
+          }
+          className="touch-target-lg bg-surface hover:bg-surface-secondary text-foreground active:scale-95 text-xs font-bold rounded-xl border border-border transition-all flex items-center justify-center gap-2 shadow-sm"
+        >
+          <Download className="w-4 h-4 text-primary" />
+          <span>Download PDF</span>
+        </button>
+      </div>
+
+      {/* 4. Document Pages Preview Scaffolding */}
+      <div className="flex flex-col gap-3 pt-2">
+        <h3 className="text-sm font-bold text-foreground">
+          Document Pages ({doc.pageCount})
+        </h3>
+
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+          {Array.from({ length: Math.min(doc.pageCount, 6) }).map((_, index) => (
+            <div
+              key={index}
+              className="bg-surface border border-border rounded-xl p-3 flex flex-col items-center justify-between aspect-[3/4] shadow-sm hover:border-primary/50 transition-colors"
+            >
+              <div className="w-full flex flex-col gap-1.5 opacity-30 pt-2">
+                <div className="w-full h-1 rounded bg-foreground" />
+                <div className="w-5/6 h-1 rounded bg-foreground" />
+                <div className="w-4/6 h-1 rounded bg-foreground" />
+                <div className="w-full h-1 rounded bg-foreground" />
+              </div>
+
+              <span className="text-[10px] font-bold text-muted-foreground bg-surface-secondary px-2 py-0.5 rounded-full border border-border/40">
+                Page {index + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
