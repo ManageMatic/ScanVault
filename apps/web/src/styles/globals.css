@@ -4,69 +4,40 @@
 
 @layer base {
   :root {
-    /* Light Theme Tokens */
-    --background: 210 20% 98%;
-    --surface: 0 0% 100%;
-    --surface-secondary: 210 16% 94%;
-    --foreground: 222 47% 11%;
-    --muted: 215 16% 47%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 20% 88%;
-    --border-subtle: 214 20% 92%;
+    /* ScanVault Unified Design System - Single Cohesive Aesthetic */
+    --background: 222 47% 7%;        /* #0a0f19 - Deep Midnight Slate */
+    --surface: 222 36% 11%;          /* #111827 - Elevated Card */
+    --surface-secondary: 222 28% 15%;/* #182234 - Floating Surface / Input */
+    --surface-tertiary: 222 24% 20%; /* #222f46 - Active / Hover Item */
+    --foreground: 210 40% 98%;       /* #f8fafc - Crisp White Heading/Body */
+    --muted: 215 20% 65%;            /* #94a3b8 - Secondary Text */
+    --muted-foreground: 215 16% 50%; /* #64748b - Subtle Metadata */
+    --border: 222 22% 18%;           /* #202c3f - Hairline Border */
+    --border-subtle: 222 22% 14%;    /* #162030 - Low Contrast Border */
     
-    --primary: 174 100% 26%; /* #008378 teal brand */
-    --primary-foreground: 0 0% 100%;
-    --primary-subtle: 174 60% 94%;
+    --primary: 238 84% 67%;          /* #6366f1 - Electric Indigo Accent */
+    --primary-foreground: 0 0% 100%; /* #ffffff */
+    --primary-subtle: 238 84% 67% / 0.14;
     
-    --accent: 172 66% 50%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 190 95% 45%;           /* #06b6d4 - Radiant Cyan */
+    --accent-foreground: 0 0% 100%;
     
-    --success: 152 68% 38%;
+    --success: 158 64% 52%;          /* #10b981 - Emerald */
     --success-foreground: 0 0% 100%;
     
-    --warning: 38 92% 50%;
+    --warning: 38 92% 50%;           /* #f59e0b - Amber */
     --warning-foreground: 0 0% 100%;
     
-    --destructive: 0 72% 51%;
+    --destructive: 350 89% 60%;      /* #f43f5e - Rose */
     --destructive-foreground: 0 0% 100%;
     
-    --overlay: 222 47% 11% / 0.5;
+    --overlay: 222 47% 4% / 0.82;
 
     /* Safe Area Defaults */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
-  }
-
-  .dark {
-    /* Dark Theme Tokens */
-    --background: 222 36% 6%; /* #090c10 deep vault */
-    --surface: 222 30% 10%; /* #11161f card */
-    --surface-secondary: 220 25% 14%; /* #1a212b surface */
-    --foreground: 210 40% 98%; /* #f8fafc */
-    --muted: 215 20% 65%; /* #94a3b8 */
-    --muted-foreground: 215 16% 55%;
-    --border: 220 20% 18%; /* #242c38 */
-    --border-subtle: 220 20% 14%;
-    
-    --primary: 172 75% 42%; /* #1bbca9 vibrant teal */
-    --primary-foreground: 222 47% 11%;
-    --primary-subtle: 174 60% 12%;
-    
-    --accent: 172 80% 60%;
-    --accent-foreground: 222 47% 11%;
-    
-    --success: 152 68% 48%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    
-    --destructive: 0 72% 58%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --overlay: 0 0% 0% / 0.75;
   }
 
   * {
@@ -92,6 +63,84 @@
     touch-action: manipulation;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(238 84% 67% / 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(190 95% 45% / 0.04), transparent);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Premium Glass Cards */
+  .glass-card {
+    background-color: hsl(var(--surface) / 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-card-interactive {
+    background-color: hsl(var(--surface) / 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card-interactive:hover {
+    background-color: hsl(var(--surface-secondary) / 0.85);
+    border-color: hsl(var(--primary) / 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -6px hsl(var(--primary) / 0.15);
+  }
+
+  .glass-card-interactive:active {
+    transform: scale(0.985);
+  }
+
+  /* Core Action Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(245, 80%, 60%) 100%);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 0.875rem;
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 6px 22px hsl(var(--primary) / 0.5);
+    filter: brightness(1.08);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .btn-secondary {
+    background-color: hsl(var(--surface-secondary));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: hsl(var(--surface-tertiary));
+    border-color: hsl(var(--primary) / 0.3);
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.97);
+  }
+
+  /* Glowing Badges */
+  .badge-glow {
+    background-color: hsl(var(--primary-subtle));
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 12px hsl(var(--primary) / 0.2);
   }
 }
 
@@ -141,7 +190,7 @@
     justify-content: center;
   }
 
-  /* Custom scrollbar hiding for clean mobile horizontal tabs */
+  /* Custom scrollbar hiding */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
