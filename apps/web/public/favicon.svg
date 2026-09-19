@@ -1,8 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <rect width="100" height="100" rx="24" fill="#0c0f14"/>
-  <rect x="2" y="2" width="96" height="96" rx="22" stroke="#008378" stroke-width="3" stroke-opacity="0.5"/>
-  <path d="M30 25H70C74.4183 25 78 28.5817 78 33V75C78 79.4183 74.4183 83 70 83H30C25.5817 83 22 79.4183 22 75V33C22 28.5817 25.5817 25 30 25Z" fill="#161B22" stroke="#008378" stroke-width="4"/>
-  <path d="M34 40H66M34 52H66M34 64H50" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="68" cy="66" r="14" fill="#008378"/>
-  <path d="M64 66L67 69L73 63" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Rounded Indigo Background Canvas -->
+  <rect width="100" height="100" rx="22" fill="#4F46E5"/>
+  
+  <!-- Back Document Sheet -->
+  <rect x="34" y="20" width="40" height="52" rx="6" fill="#818CF8" fill-opacity="0.5"/>
+  
+  <!-- Front Document Sheet -->
+  <rect x="24" y="28" width="42" height="52" rx="6" fill="#FFFFFF"/>
+  
+  <!-- Document Fold Corner -->
+  <path d="M54 28V38H66" stroke="#E5E7EB" stroke-width="2" fill="#F1F3F8"/>
+  
+  <!-- Document Content Lines -->
+  <path d="M32 44H56" stroke="#4F46E5" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 52H52" stroke="#98A2B3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 60H46" stroke="#98A2B3" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Active Mini Check Badge -->
+  <circle cx="68" cy="70" r="10" fill="#14B8A6"/>
+  <path d="M64.5 70L67 72.5L71.5 67.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -4,8 +4,8 @@
   "description": "Mobile-First Document Workspace & Offline PDF Studio",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c0f14",
-  "theme_color": "#0c0f14",
+  "background_color": "#F7F8FC",
+  "theme_color": "#4F46E5",
   "orientation": "portrait-primary",
   "icons": [
     {
